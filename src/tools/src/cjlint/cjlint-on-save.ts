@@ -83,7 +83,7 @@ export class CjlintOnSave {
   }
 
   static debounce(func: (document: vscode.TextDocument) => void, delay: number): (this: unknown, ...args: unknown[]) => void {
-    let timer: NodeJS.Timeout;
+    let timer: ReturnType<typeof setTimeout>;
     return function (this: unknown, ...args: unknown[]) {
       clearTimeout(timer);
       timer = setTimeout(() => {
