@@ -1,5 +1,5 @@
 {
-	"version" : "2.0",
+	"version" : "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
 	"name" : "Cangjie",
 	"scopeName" : "source.cj",
 	"patterns" : [{
@@ -278,7 +278,7 @@
 							"name" : "keyword.control.import.Cangjie"
 						}
 					},
-					"end" : "(?=\\b[0-9])|(?=[^\\w\\s.:,`*{}])|(?=\\b(public|internal|protected|private|override|abstract|open|redef|sealed)\\b(\\x20)*[^.,\\s])|(?=\\b(VArray|const|differentiable|grad|vjp|valWithGrad|adjoint|adjointOf|when|except|include|primal|stage|main|false|IntNative|mut|Nothing|prop|true|UIntNative|unsafe|Int8|Int16|Int32|Int64|UInt8|UInt16|UInt32|UInt64|Float16|Float32|Float64|Rune|Bool|Unit|struct|enum|This|package|import|class|interface|extend|func|let|var|type|init|this|super|if|else|case|try|catch|finally|for|do|while|throw|return|continue|break|is|in|match|where|spawn|synchronized|macro|quote|static|external|operator|foreign|inout|common|specific)\\s)",
+					"end" : "(?=\\b[0-9])|(?=[^\\w\\s.:,`*{}])|(?=\\b(public|internal|protected|private|override|abstract|open|redef|sealed)\\b(\\x20)*[^.,\\s])|(?=\\b(VArray|const|differentiable|grad|vjp|valWithGrad|adjoint|adjointOf|when|except|include|primal|stage|main|false|IntNative|mut|Nothing|prop|true|UIntNative|unsafe|Int8|Int16|Int32|Int64|UInt8|UInt16|UInt32|UInt64|Float16|Float32|Float64|Rune|Bool|Unit|struct|enum|This|package|import|class|interface|extend|func|let|var|type|init|this|super|if|else|case|try|catch|finally|for|do|while|throw|return|continue|break|is|in|match|where|spawn|synchronized|macro|quote|static|external|operator|foreign|inout)\\s)",
 					"endCaptures" : {
 						"1" : {
 							"name" : "punctuation.terminator.Cangjie"

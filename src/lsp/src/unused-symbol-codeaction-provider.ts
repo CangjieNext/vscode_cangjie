@@ -84,14 +84,14 @@ async function removeEmptyImports(uri: vscode.Uri, doc: vscode.TextDocument): Pr
   for (let i = 0; i < doc.lineCount; i++) {
     const lineText = doc.lineAt(i).text;
 
-    // 单行空导入
-    if (/^\s*import\s+[\w.]+\.\s*\{\s*\}\s*$/.test(lineText)) {
+    // 单行空导入（支持 import {} 和 import module.{}）
+    if (/^\s*import\s+[\w.]*\.?\s*\{\s*\}\s*$/.test(lineText)) {
       potentialBlocks.push(i);
       continue;
     }
 
-    // 多行空导入的开始
-    const multiLineMatch = lineText.match(/^(?:\s*import\s+[\w.]+\.)\s*\{\s*$/);
+    // 多行空导入的开始（支持 import {} 和 import module.{}）
+    const multiLineMatch = lineText.match(/^(?:\s*import\s+[\w.]*\.?)\s*\{\s*$/);
     if (multiLineMatch) {
       potentialBlocks.push(i);
     }
@@ -102,7 +102,7 @@ async function removeEmptyImports(uri: vscode.Uri, doc: vscode.TextDocument): Pr
     const lineText = doc.lineAt(startLine).text;
 
     // 情况 A: 单行空导入
-    if (/^\s*import\s+[\w.]+\.\s*\{\s*\}\s*$/.test(lineText)) {
+    if (/^\s*import\s+[\w.]*\.?\s*\{\s*\}\s*$/.test(lineText)) {
       rangesToDelete.push(doc.lineAt(startLine).rangeIncludingLineBreak);
       continue;
     }

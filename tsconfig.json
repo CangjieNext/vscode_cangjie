@@ -24,5 +24,5 @@
     "noImplicitReturns": true,
     "noImplicitThis": false
   },
-  "exclude": ["node_modules", ".vscode-test", "src/dap/test", "src/dap/src/__mocks__"]
+  "exclude": ["node_modules", ".vscode-test", "src/dap/test", "src/dap/src/__mocks__", "debug-ui"]
 }

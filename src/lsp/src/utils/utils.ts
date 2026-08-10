@@ -184,6 +184,13 @@ export class Utility {
     return workspace.workspaceFolders[0].uri.fsPath;
   }
 
+  static getWorkspaceRoot(): string {
+    if (!Utility.checkIsValid(workspace.workspaceFolders) || workspace.workspaceFolders.length === 0) {
+      return undefined;
+    }
+    return workspace.workspaceFolders[0].uri.fsPath;
+  }
+
   static hasCjpmToml(projectPath: string = ''): boolean {
     let workspaceFolders = '';
     if (Utility.checkIsValid(projectPath)) {
@@ -1470,7 +1477,11 @@ export class Utility {
   }
 
   static getCjpmBuildArgsContent(): JSON {
-    const jsonPath = path.join(Utility.getWorkspaceFolders(), '.vscode', 'cjpm_build_args.json');
+    const workspaceRoot = Utility.getWorkspaceRoot();
+    if (!workspaceRoot) {
+      return {} as JSON;
+    }
+    const jsonPath = path.join(workspaceRoot, '.vscode', 'cjpm_build_args.json');
     if (!fs.existsSync(jsonPath)) {
       return {} as JSON;
     }

@@ -181,6 +181,7 @@ export const PACKAGE_OPTION = 'package-option';
 
 export const PROFILE = 'profile';
 export const CUSTOMIZED_OPTION = 'customized-option';
+export const SOURCE_SET = 'source-set';
 
 export const FFI = 'ffi';
 export const C = 'c';

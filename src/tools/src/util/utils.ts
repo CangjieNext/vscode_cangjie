@@ -12,7 +12,7 @@ import * as os from 'os';
 import {exec, execSync} from 'child_process';
 import type {Uri, WorkspaceFolder} from 'vscode';
 import {ConfigurationTarget, window, workspace} from 'vscode';
-import {CJPM_TOML, cjpmBuildArgExtname, cjpmBuildArgs, CUSTOMIZED_OPTION, delay100, envPathName, PACKAGE, PROFILE, SRC, SRC_DIR} from './constant-num';
+import {CJPM_TOML, cjpmBuildArgExtname, cjpmBuildArgs, CUSTOMIZED_OPTION, delay100, DEPENDENCIES, DEV_DEPENDENCIES, SCRIPT_DEPENDENCIES, envPathName, PACKAGE, PROFILE, SOURCE_SET, SRC, SRC_DIR} from './constant-num';
 import {OutputHelper} from './output-helper';
 import type {CjpmBuildArgs, ModuleJson} from './cjpm-config-data';
 import type {CustomTomlTypes} from './toml/toml-types';
@@ -588,6 +588,41 @@ export class Utility {
       tomlContent = {};
     }
     return tomlContent;
+  }
+
+  static getMergedTomlContentForWebview(): CustomTomlTypes {
+    const rootContent = Utility.getTomlContent() as { [key: string]: unknown };
+    const merged: { [key: string]: unknown } = { ...rootContent };
+    const rootSourceSets = Array.isArray(rootContent[SOURCE_SET]) ? rootContent[SOURCE_SET] as unknown[] : [];
+    const mergedSourceSets = [...rootSourceSets];
+    const rootProjectPath = Utility.getCjRootProjectPath();
+    const depCategories = [DEPENDENCIES, DEV_DEPENDENCIES, SCRIPT_DEPENDENCIES];
+    for (const depType of depCategories) {
+      const deps = rootContent[depType];
+      if (!deps || typeof deps !== 'object' || Array.isArray(deps)) {
+        continue;
+      }
+      const depMap = deps as Record<string, unknown>;
+      for (const depName of Object.keys(depMap)) {
+        const dep = depMap[depName];
+        if (!dep || typeof dep !== 'object' || Array.isArray(dep)) {
+          continue;
+        }
+        const depPath = (dep as { path?: unknown }).path;
+        if (!depPath || typeof depPath !== 'string') {
+          continue;
+        }
+        const depTomlPath = path.join(rootProjectPath, depPath, CJPM_TOML);
+        if (!fs.existsSync(depTomlPath)) {
+          continue;
+        }
+        const depContent = Utility.getTomlContent(depTomlPath) as { [key: string]: unknown };
+        const depSourceSets = Array.isArray(depContent[SOURCE_SET]) ? depContent[SOURCE_SET] as unknown[] : [];
+        mergedSourceSets.push(...depSourceSets);
+      }
+    }
+    merged[SOURCE_SET] = mergedSourceSets;
+    return merged as unknown as CustomTomlTypes;
   }
 
   static getTomlValueByTreeKeys(treeKeys: string[], tomlContentParam?: CustomTomlTypes, returnUndefined: boolean = true,

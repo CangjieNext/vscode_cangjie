@@ -151,6 +151,8 @@ export class ChangjieContext implements vscode.Disposable {
   subscriptions: vscode.Disposable[] = [];
   client!: CangjieLanguageClient | null;
   traceOutput: vscode.OutputChannel;
+  // 用于 semanticTokens 请求防抖的定时器
+  private semanticTokensDebounceTimer: NodeJS.Timeout | null = null;
 
   get visibleClangdEditors(): vscode.TextEditor[] {
     return vscode.window.visibleTextEditors.filter((e) => isClangdDocument(e.document));
@@ -379,30 +381,36 @@ export class ChangjieContext implements vscode.Disposable {
     return vscode.languages.match({ scheme: 'file', language: 'Cangjie' }, document) > 0;
   }
 
-  // 监听文本变化，当发生编辑时，优先刷新当前编辑器，其他可见编辑器延迟刷新
+  // 监听文本变化，当发生编辑时，对其他打开的 Cangjie 编辑器发送 semanticTokens 请求
+  // 添加延迟确保 didChange 先到达 LSP，过滤触发编辑的文件避免重复请求，使用防抖避免频繁触发
   private registerTextChangeListener(): void {
     const textChangeListener = vscode.workspace.onDidChangeTextDocument((event) => {
+      // 过滤掉保存操作（保存不会产生 contentChanges）
+      if (event.contentChanges.length === 0) {
+        return;
+      }
+
       const editedDocument = event.document;
       if (!this.isCangjieDocument(editedDocument)) {
         return;
       }
 
-      const activeEditor = vscode.window.activeTextEditor;
-      const visibleEditors = vscode.window.visibleTextEditors;
+      const editedUri = editedDocument.uri.toString();
 
-      // 立即刷新当前活动编辑器的 semanticTokens
-      if (activeEditor && this.isCangjieDocument(activeEditor.document) && activeEditor.document.uri.toString() === editedDocument.uri.toString()) {
-        this.requestSemanticTokens(activeEditor.document);
+      // 清楚之前的定时器，实现防抖
+      if (this.semanticTokensDebounceTimer) {
+        clearTimeout(this.semanticTokensDebounceTimer);
       }
 
-      // 延迟刷新其他可见编辑器的 semanticTokens
-      setTimeout(() => {
-        for (const editor of visibleEditors) {
-          if (editor !== activeEditor && this.isCangjieDocument(editor.document)) {
+      // 延迟发送，确保 didChange 先到达 LSP
+      this.semanticTokensDebounceTimer = setTimeout(() => {
+        for ( const editor of vscode.window.visibleTextEditors) {
+          // 过滤掉出发编辑的文件
+          if (this.isCangjieDocument(editor.document) && editor.document.uri.toString() !== editedUri) {
             this.requestSemanticTokens(editor.document);
           }
         }
-      }, 100);
+      }, 400);
     });
     this.subscriptions.push(textChangeListener);
   }

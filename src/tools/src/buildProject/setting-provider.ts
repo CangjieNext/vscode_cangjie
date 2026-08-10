@@ -41,7 +41,7 @@ export class SettingsProvider extends ViewProvider {
   }
 
   public getCjpmContent(): CustomTomlTypes {
-    this.cjpmContent = Utility.getTomlContent();
+    this.cjpmContent = Utility.getMergedTomlContentForWebview();
     return this.cjpmContent;
   }
 
