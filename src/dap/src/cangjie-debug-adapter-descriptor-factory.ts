@@ -203,7 +203,6 @@ export class CangjieDebugAdapterDescriptorFactory implements vscode.DebugAdapter
       default:
         break;
     }
-    return multiCmd;
   }
 
   private async startCjvmDebug(envConfInstance: CangjieEnvConfiguration, config: CangjieDebugConfiguration): Promise<void> {
