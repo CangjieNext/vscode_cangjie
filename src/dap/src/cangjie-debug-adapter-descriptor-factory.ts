@@ -203,6 +203,7 @@ export class CangjieDebugAdapterDescriptorFactory implements vscode.DebugAdapter
       default:
         break;
     }
+    // test
     return multiCmd;
   }
 
