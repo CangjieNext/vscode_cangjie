@@ -13,4 +13,4 @@ export interface RecordsChangedProps {
   newRecords: RecordProps[];
 
   removedRecordIds?: number[];
-};
+}

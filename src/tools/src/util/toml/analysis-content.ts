@@ -218,7 +218,6 @@ export interface ParseKeyReq {
   character: string;
   contentStr: string;
   startPos: number;
-  dotPos: number;
   endPos: number;
   endCharacter: string;
 }
@@ -230,7 +229,8 @@ export interface ParseKeyRes {
 
 function doParseKey(parseKeyReq: ParseKeyReq, keys: any[]): ParseKeyRes {
   const {character, contentStr, startPos, endCharacter} = parseKeyReq;
-  let {dotPos, endPos} = parseKeyReq;
+  let {endPos} = parseKeyReq;
+  let dotPos: number;
   if (character === '"' || character === '\'') {
     if (character === contentStr[startPos + 1] && character === contentStr[startPos + TWO_POS_OFFSET]) {
       throw new CustomTomlError('multiline strings are not allowed in keys', contentStr, startPos);
@@ -282,7 +282,7 @@ export function parseKey(contentStr: string, startPosParam: number, endCharacter
     if (character === ' ' || character === '\t') {
       continue;
     }
-    const retObj = doParseKey({character, contentStr, startPos, dotPos, endPos, endCharacter}, keys);
+    const retObj = doParseKey({character, contentStr, startPos, endPos, endCharacter}, keys);
     ({dotPos, endPos} = retObj);
   } while (dotPos + 1 && dotPos < endPos);
   return [keys, skipVoidChar(contentStr, endPos + 1, true)];

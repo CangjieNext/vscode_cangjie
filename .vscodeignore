@@ -10,5 +10,6 @@ webpack.config.js
 webpack.common.js
 webpack.dev.js
 build.yml.lock
+BUILD.md
 doc/**
 debug-ui/**

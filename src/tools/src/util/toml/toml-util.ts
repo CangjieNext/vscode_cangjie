@@ -84,7 +84,7 @@ export function getStringEnd(str: string, seekPositionParam: number): number {
   seekPosition += target.length - 1;
   const notSingleDot = first !== '\'';
   do {
-    seekPosition = str.indexOf(target, ++seekPosition);
+    seekPosition = str.indexOf(target, seekPosition + 1);
   } while (seekPosition > -1 && notSingleDot && str[seekPosition - 1] === '\\' &&
   str[seekPosition - TWO_POS_OFFSET] !== '\\');
   if (seekPosition > -1) {

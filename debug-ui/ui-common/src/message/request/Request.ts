@@ -11,7 +11,7 @@ export interface Request<BODY> {
   command: string;
   type: MessageType;
   body: BODY;
-};
+}
 
 export interface Response<BODY> {
   id: number;
@@ -20,7 +20,7 @@ export interface Response<BODY> {
   success: boolean;
   body?: BODY;
   errMessage?: string;
-};
+}
 
 export class RequestResponseType<REQ_BODY, RESP_BODY> {
   command: string;

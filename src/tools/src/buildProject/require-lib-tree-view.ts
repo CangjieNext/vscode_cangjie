@@ -41,8 +41,8 @@ export class LibTreeView implements vscode.Disposable {
         break;
       }
       case 'delete': {
-        this.treeViewInstance.getChildren((element?.parent));
-        this.treeViewInstance.refresh((element?.parent));
+        this.treeViewInstance.getChildren(element?.parent);
+        this.treeViewInstance.refresh(element?.parent);
         break;
       }
       default: {

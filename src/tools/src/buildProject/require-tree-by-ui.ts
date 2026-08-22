@@ -14,7 +14,13 @@ interface VsCodeApi {
   getState: () => unknown;
 }
 
-declare function acquireVsCodeApi(): VsCodeApi;
+interface WebviewWindow extends Window {
+  acquireVsCodeApi: () => VsCodeApi;
+}
+
+declare const window: WebviewWindow;
+
+const vsCodeApi = window.acquireVsCodeApi();
 
 const element: { [key: string]: string } = {
   addDependenciesBtn: 'add_dependencies',
@@ -47,34 +53,25 @@ const C = 'c';
 const JAVA = 'java';
 
 class RequireTreeByUi {
-  private readonly vsCodeApi: VsCodeApi;
   private requireCategory = ['dependencies', 'bin-dependencies', 'ffi', 'dev-dependencies', 'script-dependencies'];
   private delIconPath;
 
   constructor() {
-    this.vsCodeApi = acquireVsCodeApi();
-
     window.addEventListener('message', this.didReceivedMessage.bind(this));
     this.addEventToAddBotton();
 
-    this.vsCodeApi.postMessage({
+    vsCodeApi.postMessage({
       command: 'initialRequireUI',
     });
   }
 
   private didReceivedMessage(e: MessageEvent): void {
     const message: RequiresTreeMessage = e.data;
-    switch (message.command) {
-      case 'settedRequire': {
-        if (message.uri !== null && message.uri !== undefined) {
-          this.delIconPath = message.uri;
-        }
-        this.settedRequire(message);
-        break;
+    if (message.command === 'settedRequire') {
+      if (message.uri !== null && message.uri !== undefined) {
+        this.delIconPath = message.uri;
       }
-      default: {
-        break;
-      }
+      this.settedRequire(message);
     }
   }
 
@@ -89,7 +86,7 @@ class RequireTreeByUi {
 
   // notify vscode to open file dialog
   private openFileDialog(requireType: string): void {
-    this.vsCodeApi.postMessage({
+    vsCodeApi.postMessage({
       command: 'addRequire',
       requireType,
     });
@@ -160,14 +157,14 @@ class RequireTreeByUi {
       }
 
       let iconTd = document.createElement('td');
-      let delIcon = <HTMLSpanElement>document.createElement('span');
+      let delIcon = document.createElement('span');
       delIcon.id = 'del_path_option';
       delIcon.className = 'delIcon';
       delIcon.textContent = '✖';
       const tow = 2;
       delIcon.addEventListener('click', (event) => {
         const elementsArray = event['path'] || event.composedPath();
-        this.vsCodeApi.postMessage({
+        vsCodeApi.postMessage({
           command: 'delRequire',
           requireType: type,
           requireName: elementsArray[tow].firstChild.innerHTML,

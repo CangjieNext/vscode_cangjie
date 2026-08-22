@@ -1,6 +1,6 @@
 # debug ui components
 
-ui 仓用于为调试插件提供 webview 显示。当前支撑 ide 包括：DevEco、vsCode、vnext。
+ui 仓用于为调试插件提供 webview 显示。当前支撑 ide 包括：DevEco、vsCode。
 
 ## 项目结构
 ```
@@ -47,11 +47,11 @@ ui 仓用于为调试插件提供 webview 显示。当前支撑 ide 包括：Dev
 
 - 安装所有子项目的依赖，在项目根目录下执行命令：
 ```
-npm install -ws
+npm install --workspaces
 ```
 - 安装指定子项目的依赖，在项目跟木下下执行命令：
 ```
-npm install -w=ui-common -w=ui-timeline
+npm install --workspace=ui-common --workspace=ui-timeline
 ```
 - 安装某一子项目的依赖，在子项目的目录中执行命令：
 ```
@@ -62,11 +62,11 @@ npm install
 ### 编译
 - 编译所有子项目，在项目根目录下执行命令：
 ```
-npm run build -ws
+npm run build --workspaces
 ```
 - 编译指定子项目的依赖，在项目跟木下下执行命令：
 ```
-npm run build -w=ui-common -w=ui-timeline
+npm run build --workspace=ui-common --workspace=ui-timeline
 ```
 - 安装某一子项目的依赖，在子项目的目录中执行命令：
 ```

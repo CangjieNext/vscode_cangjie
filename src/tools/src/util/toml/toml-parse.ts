@@ -28,8 +28,8 @@ export function parseToml(content: string, commentMap: Map<string, CommentRecord
   let keys: string[] = [];
   for (let position = skipVoidChar(content, 0); position < content.length;) {
     if (content[position] === '[') {
-      const isTableArray = content[++position] === '[';
-      const keysPosition = parseKey(content, position += +Number(isTableArray), ']');
+      const isTableArray = content[position + 1] === '[';
+      const keysPosition = parseKey(content, position + (isTableArray ? 2 : 1), ']');
       if (isTableArray && content[keysPosition[1] - 1] !== ']') {
         throw new CustomTomlError('expected end of table declaration', content, keysPosition[1] - 1);
       }

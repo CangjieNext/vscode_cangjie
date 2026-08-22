@@ -241,10 +241,8 @@ export class Utility {
 
     const targetDir = await Utility.getTargetDir();
     let buildPath = path.join(targetDir, 'release');
-    let aimFile = 'release';
     if (fs.existsSync(buildPath) === false) {
       buildPath = path.join(targetDir, 'debug');
-      aimFile = 'debug';
     }
     let filesEnvPath = '';
     // delete old .dll File and copy new .dll file
@@ -255,7 +253,7 @@ export class Utility {
     try {
       fs.renameSync(lspBuildPath, `${lspBuildPath}-${bak}`);
     } catch (e) {
-      const a = 1;
+      // The cache directory does not exist yet.
     }
     while (fs.existsSync(`${lspBuildPath}-${bak}`)) {
       try {
@@ -790,11 +788,9 @@ export class Utility {
   }
 
   static getJavaModules(moduleJavaData: unknown): unknown {
-    let res = moduleJavaData;
     if (!Utility.checkIsValid(moduleJavaData)) {
       return [];
     }
-    res = Object.keys(moduleJavaData);
     return moduleJavaData;
   }
 
@@ -1724,8 +1720,7 @@ export class Utility {
         }
       } else {
         let depName = String(requireItem);
-        let repoVersion = requiresData[requireItem];
-        repoVersion = this.getProjectVersion(requireItem, requiresData[requireItem]);
+        const repoVersion = this.getProjectVersion(requireItem, requiresData[requireItem]);
         if (repoVersion.length === 0) {
           continue;
         }

@@ -28,7 +28,7 @@ import {
   TARGET_DIR
 } from './cjpm-toml-constans';
 import {tomlParser} from '../command';
-import {checkFieldNotBlank, checkIsValid, getArch, getOs, getSdkPath, isEmpty, replaceWithEnv} from '../common-utils';
+import {checkFieldNotBlank, checkIsValid, getSdkPath, isEmpty} from '../common-utils';
 import {cjpmDefaultPath} from "../constants";
 import {SystemTriple} from "./SystemTriple";
 import {ProjectType} from "../types";
@@ -56,7 +56,6 @@ export class CangjieDependency {
     } catch (err) {
       return '';
     }
-    const data = replaceWithEnv(fs.readFileSync(cjpmLockPath, 'utf8'));
     let moduleLockData = {} as any;
     try {
       moduleLockData = await CangjieDependency.parseTomlData(cjpmLockPath);
