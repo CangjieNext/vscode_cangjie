@@ -24,8 +24,8 @@ export class ViewController {
           vscode.window.showInformationMessage('This command applies only to Linux, Windows and Mac.');
           return;
         }
-        Utility.isExistSdk('cjpm').then((data: string) => {
-          this.init(context.extensionPath, data);
+        Utility.isExistSdk('cjpm').then(() => {
+          this.init(context.extensionPath);
         }).catch((error) => {
           OutputHelper.appendLine(error);
         });
@@ -37,7 +37,7 @@ export class ViewController {
     this.disposable.dispose();
   }
 
-  async init(extensionPath: string, pathSdk: string): Promise<void> {
+  async init(extensionPath: string): Promise<void> {
     if (Utility.checkIsValid(CreateProjectUtils.panel)) {
       const columnToShowIn = Utility.checkIsValid(vscode.window.activeTextEditor) ? vscode.window.activeTextEditor.viewColumn : undefined;
       CreateProjectUtils.panel.reveal(columnToShowIn);
@@ -53,7 +53,6 @@ export class ViewController {
       }
     );
     CreateProjectUtils.panel.webview.onDidReceiveMessage((message) => {
-      let curPathSdk = pathSdk;
       switch (message.command) {
         case 'selectPath':
           CreateProjectUtils.selectPath().then((projectDir) => {
@@ -66,10 +65,11 @@ export class ViewController {
           CreateProjectUtils.closePanel();
           return;
         case 'finishSetting':
-          if (message.compileBackend === 'CJNative') {
-            curPathSdk = <string>vscode.workspace.getConfiguration('CangjieSdkPath').get('CJNativeBackend');
-          } else {
-            curPathSdk = <string>vscode.workspace.getConfiguration('CangjieSdkPath').get('CJVMBackend');
+          const backendSetting = message.compileBackend === 'CJNative' ? 'CJNativeBackend' : 'CJVMBackend';
+          const curPathSdk = vscode.workspace.getConfiguration('CangjieSdkPath').get<string>(backendSetting, '');
+          if (!Utility.checkIsValid(curPathSdk)) {
+            vscode.window.showErrorMessage(`The ${message.compileBackend} SDK path has not been configured properly.`);
+            return;
           }
           this.finishSetting(message, curPathSdk, CreateProjectUtils.panel);
           return;

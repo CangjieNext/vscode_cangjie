@@ -24,7 +24,7 @@ interface MainTimelineProps {
   totalPixelWidth: number;
 
   totalTimeMille: number;
-};
+}
 
 export const MainTimeline: (props: MainTimelineProps) => JSX.Element = (props: MainTimelineProps): JSX.Element => {
   const {totalPixelWidth, totalTimeMille, timeStampSelectedRecord, selectionTimeSetter} = props;

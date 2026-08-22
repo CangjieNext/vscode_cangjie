@@ -15,7 +15,6 @@ import {
   Definition as VDefinition,
   DefinitionLink as VDefinitionLink,
   DocumentLink,
-  Location,
   Position as VPosition,
   ProviderResult,
   TextDocument,
@@ -79,19 +78,15 @@ export const documentLinkMidware = function (
   return provideDocumentLinks(document, token);
 };
 
-interface message {
+interface CrossMessage {
   targetLanguage: string;
   functionName: string;
   functionParameters: string[];
   retType: string;
 }
 
-class ExtendLocation extends Location {
-  crossMessage: message[];
-  constructor(uri: vscode.Uri, rangeOrPosition: vscode.Position | vscode.Range, crossMessage: message[]) {
-    super(uri, rangeOrPosition);
-    this.crossMessage = crossMessage;
-  }
+interface ExtendLocation extends vscodelc.Location {
+  crossMessage: CrossMessage[];
 }
 
 const DefinitionRequestEnhance = {
@@ -103,12 +98,12 @@ const DefinitionRequestEnhance = {
 let crossDefinitionCangjie2C = async function (
   result: ExtendLocation | vscodelc.Definition | vscodelc.LocationLink[],
   token: CancellationToken,
-  message: message,
+  message: CrossMessage,
 ): Promise<vscode.Definition | vscode.DefinitionLink[] | undefined> {
   const CppDirectory = vscode.workspace.getConfiguration('CrossLanguage').get('CppDirectory');
   if (CppDirectory === '') {
     vscode.window.showInformationMessage('Please enter the C++ source code directory first.');
-    return cangjieContextInstance.client?.protocol2CodeConverter.asDefinitionResult(result as vscodelc.Definition | vscodelc.LocationLink[] | null, token);
+    return cangjieContextInstance.client?.protocol2CodeConverter.asDefinitionResult(result, token);
   }
   const cCodeUri: string = cangjieContextInstance.client?.code2ProtocolConverter.asUri(vscode.Uri.file(CppDirectory as string));
   // send messeage to C client
@@ -120,10 +115,10 @@ let crossDefinitionCangjie2C = async function (
         token,
       );
     } else {
-      return cangjieContextInstance.client?.protocol2CodeConverter.asDefinitionResult(result as vscodelc.Definition | vscodelc.LocationLink[] | null, token);
+      return cangjieContextInstance.client?.protocol2CodeConverter.asDefinitionResult(result, token);
     }
   } catch (error) {
-    return cangjieContextInstance.client?.protocol2CodeConverter.asDefinitionResult(result as vscodelc.Definition | vscodelc.LocationLink[] | null, token);
+    return cangjieContextInstance.client?.protocol2CodeConverter.asDefinitionResult(result, token);
   }
 };
 
@@ -147,7 +142,7 @@ function cangjieDefinition(
             // Other Cross-Language Solutions
           }
         }
-        return cangjieContextInstance.client?.protocol2CodeConverter.asDefinitionResult(result as vscodelc.Definition | vscodelc.LocationLink[] | null, token);
+        return cangjieContextInstance.client?.protocol2CodeConverter.asDefinitionResult(result, token);
       },
       (error) => {
         return cangjieContextInstance.client?.handleFailedRequest(DefinitionRequestEnhance.type, token, error, null);
@@ -161,12 +156,12 @@ export const definitionMidware = function (
   position: VPosition,
   token: CancellationToken,
   next: ProvideDefinitionSignature,
-): ProviderResult<VDefinition | VDefinitionLink[] | ExtendLocation> {
+): ProviderResult<VDefinition | VDefinitionLink[]> {
   const provideDefinition = (
     innerDocument: TextDocument,
     innerPosition: VPosition,
     innerToken: CancellationToken,
-  ): ProviderResult<VDefinition | VDefinitionLink[] | ExtendLocation> => {
+  ): ProviderResult<VDefinition | VDefinitionLink[]> => {
     return innerDocument.uri.toString().endsWith('.cj') ? cangjieDefinition(innerDocument, innerPosition, innerToken) : null;
   };
   return provideDefinition(document, position, token);

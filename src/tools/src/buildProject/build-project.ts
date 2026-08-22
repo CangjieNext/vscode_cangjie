@@ -97,9 +97,7 @@ export class CjProjectBuildProvider {
   }
 
   static multi(): void {
-    const params: string = '';
     multiParamsBuild().then((buildParams: string) => {
-      params.concat(buildParams);
       if (Utility.checkIsValid(buildParams)) {
         this.executeCmd(buildParams);
       }

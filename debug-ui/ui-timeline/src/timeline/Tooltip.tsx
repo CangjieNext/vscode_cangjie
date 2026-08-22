@@ -18,10 +18,10 @@ export interface TooltipProps {
   maxTooltipWidth: number;
   message: string;
   theme: TooltipTheme;
-};
+}
 
 export function Tooltip(props: TooltipProps): JSX.Element {
-  const {startPos, widthRange, heightRange, targetHeight, maxTooltipWidth, message, theme} = props;
+  const {startPos, heightRange, targetHeight, message, theme} = props;
 
   let tooltipSize: number[] = getToolTipSize(message, theme.fontSize);
   let [tooltipWidth, tooltipHeight] = tooltipSize;

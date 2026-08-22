@@ -14,10 +14,9 @@ doWorker();
 
 function doWorker(): void {
   const processId = workerData;
-  let cjpmDone = false;
   cjpmExe = false;
   while (checkcjpmProcess(processId)) {
-    cjpmDone = false;
+    // Wait for all child cjpm processes to exit.
   }
   parentPort.postMessage(true);
 }

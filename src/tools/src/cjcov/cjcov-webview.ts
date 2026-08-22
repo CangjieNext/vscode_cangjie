@@ -18,8 +18,6 @@ import * as util from 'util';
 export enum Commands {
   CJPM_UPDATE = 'cjpm update',
   CJPM_COVERAGE = 'cjpm build --coverage',
-  LINUX_IMPLEMENT = './build/bin/main',
-  WIN_IMPLEMENT = '.\\build\\bin\\main',
   CJCOV = 'cjcov -o output --html-details -i ',
   CJPM_CLEAN = 'cjpm clean',
   CJPM_RUN = 'cjpm run --skip-build',
@@ -105,20 +103,10 @@ export class CjcovWebview extends Webview {
   }
 
   async execfunc(cmd: string, cwdPath?: string, filePath?: string): Promise<boolean> {
-    let curPath = filePath;
-    let newCmd = cmd;
-    if (curPath === undefined) {
-      curPath = '';
-    } else {
-      newCmd = newCmd + curPath;
-    }
+    const newCmd = filePath === undefined ? cmd : cmd + filePath;
     const exec = util.promisify(cp.exec);
     try {
-      let { stdout, stderr } = await exec(Utility.getExecCmd(newCmd), { cwd: cwdPath, encoding: 'binary' });
-      let implement = Commands.LINUX_IMPLEMENT;
-      if (process.platform === 'win32') {
-        implement = Commands.WIN_IMPLEMENT;
-      }
+      const { stdout } = await exec(Utility.getExecCmd(newCmd), { cwd: cwdPath, encoding: 'binary' });
       if (newCmd !== Commands.CJPM_RUN && newCmd !== Commands.CJPM_CLEAN) {
         OutputHelper.appendLine(stdout);
       }

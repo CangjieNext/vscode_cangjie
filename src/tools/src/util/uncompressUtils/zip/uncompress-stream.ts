@@ -32,7 +32,6 @@ function modeFromEntry(entry): number {
 export class ZipUncompressStream extends UncompressBaseStream {
   private _chunks;
   private _strip;
-  private _zipFileNameEncoding;
   private _yauzlOpts;
   private token;
 
@@ -43,10 +42,6 @@ export class ZipUncompressStream extends UncompressBaseStream {
     this.token = token;
     this._chunks = [];
     this._strip = Number(curOpts.strip) || 0;
-    this._zipFileNameEncoding = curOpts.zipFileNameEncoding || 'utf8';
-    if (this._zipFileNameEncoding === 'utf-8') {
-      this._zipFileNameEncoding = 'utf8';
-    }
 
     this[YAUZL_CALLBACK] = this[YAUZL_CALLBACK].bind(this);
 
@@ -77,11 +72,7 @@ export class ZipUncompressStream extends UncompressBaseStream {
         const mode = modeFromEntry(entry);
         // fileName is buffer by default because decodeStrings = false
         if (Buffer.isBuffer(entry.fileName)) {
-          if (this._zipFileNameEncoding === 'utf8') {
-            entry.fileName = entry.fileName.toString();
-          } else {
-            entry.fileName = entry.fileName.toString();
-          }
+          entry.fileName = entry.fileName.toString();
         }
         // directory file names end with '/'
         const type = /\/$/.test(entry.fileName) ? 'directory' : 'file';

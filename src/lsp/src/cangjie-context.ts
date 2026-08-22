@@ -47,7 +47,7 @@ let client: CangjieLanguageClient | null;
 
 class CangjieLanguageClient extends vscodelc.LanguageClient {
   static restartCount = 0;
-  handleFailedRequest<T>(type: vscodelc.MessageSignature, error: any, token: vscode.CancellationToken | undefined, defaultValue: T): T {
+  handleFailedRequest<T>(type: vscodelc.MessageSignature, token: vscode.CancellationToken | undefined, error: any, defaultValue: T): T {
     if (error instanceof vscodelc.ResponseError && type.method === 'workspace/executeCommand') {
       vscode.window.showErrorMessage(error.message);
     }
@@ -286,10 +286,7 @@ export class ChangjieContext implements vscode.Disposable {
     };
     if (!this.client) {
       this.client = new CangjieLanguageClient('Cangjie Language Server', 'Cangjie Language Server', serverOptions, clientOptions);
-      this.client.clientOptions.errorHandler = this.client.createDefaultErrorHandler(
-        // max restart count
-        config.get<boolean>('restartAfterCrash') ? /* default*/ 0 : 0,
-      );
+      this.client.clientOptions.errorHandler = this.client.createDefaultErrorHandler(0);
       if (!fs.existsSync(cangjieServerPath)) {
         this.client.error('The Cangjie SDK path has not been configured properly. Please configure it first.');
       }
