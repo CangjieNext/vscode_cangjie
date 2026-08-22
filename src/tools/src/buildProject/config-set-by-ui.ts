@@ -30,6 +30,12 @@ interface VsCodeApi {
   getState: () => unknown;
 }
 
+interface WebviewWindow extends Window {
+  acquireVsCodeApi: () => VsCodeApi;
+}
+
+declare const window: WebviewWindow;
+
 interface CodeTemplateStruct {
   moduleJsonField: string;
   cfgValueType: string;
@@ -165,24 +171,21 @@ const cndItem: CodeTemplateStruct = {
   oldValue: [undefined, undefined],
 };
 
-declare function acquireVsCodeApi(): VsCodeApi;
+const vsCodeApi = window.acquireVsCodeApi();
 
 class SettingByUi {
-  private readonly vsCodeApi: VsCodeApi;
   private updating: boolean = false;
   private chooseNum: string[] = ['null', 'executable', 'static', 'dynamic'];
   private featuresItems: Set<string> = new Set();
 
   constructor() {
-    this.vsCodeApi = acquireVsCodeApi();
-
     // webview
     window.addEventListener('message', this.onMessageReceived.bind(this));
 
     // Add event listeners to UI elements
     this.addEventsToInputValues();
 
-    this.vsCodeApi.postMessage({
+    vsCodeApi.postMessage({
       command: 'initialized',
     });
   }
@@ -217,7 +220,7 @@ class SettingByUi {
     }
 
     const el: HTMLInputElement = <HTMLInputElement>document.getElementById(id);
-    this.vsCodeApi.postMessage({
+    vsCodeApi.postMessage({
       command: 'change',
       key: id,
       value: el.checked,
@@ -230,7 +233,7 @@ class SettingByUi {
     }
 
     const el: HTMLInputElement = <HTMLInputElement>document.getElementById(id);
-    this.vsCodeApi.postMessage({
+    vsCodeApi.postMessage({
       command: 'change',
       key: id,
       value: el.value,
@@ -262,7 +265,7 @@ class SettingByUi {
     codeSnip.inputsElement = inputsEle;
     codeSnip.settedInputValue = {};
     let template = this.getTemplate(true, codeSnip);
-    const optEl: HTMLElement | null = <HTMLElement>document.getElementById(id);
+    const optEl = document.getElementById(id);
     optEl.appendChild(template);
   }
 
@@ -476,7 +479,7 @@ class SettingByUi {
         (snipInfo.inputsElement[i] as HTMLInputElement).value = snipInfo.settedInputValue[snipInfo.placeholder[i]];
         snipInfo.oldValue[i] = snipInfo.settedInputValue[snipInfo.placeholder[i]];
       }
-      snipInfo.inputsElement[i].addEventListener('keydown', (event: KeyboardEvent) => {
+      snipInfo.inputsElement[i].addEventListener('keydown', (event: Event) => {
         this.enterPost.bind(this, event, snipInfo, inputNum)();
       });
       if (snipInfo.placeholder[i] === 'packageName' && this.checkIsValid(snipInfo.inputsElement[i].value)) {
@@ -527,7 +530,7 @@ class SettingByUi {
     }
     let infoKey = snipInfo.inputsElement[0].value;
     if (this.checkIsValid(infoKey)) {
-      this.vsCodeApi.postMessage({
+      vsCodeApi.postMessage({
         command: 'addConfig',
         field: snipInfo.moduleJsonField,
         key: infoKey,
@@ -542,8 +545,8 @@ class SettingByUi {
     return false;
   }
 
-  private enterPost(event: KeyboardEvent, snipInfo: CodeTemplateStruct, inputNum: number): void {
-    if (event.key === 'Enter') {
+  private enterPost(event: Event, snipInfo: CodeTemplateStruct, inputNum: number): void {
+    if (event instanceof KeyboardEvent && event.key === 'Enter') {
       let changePackageName: boolean = false;
       if (snipInfo.moduleJsonField === 'package-configuration' && event.target?.['placeholder'] === 'key' &&
         event.target['value'] !== snipInfo.oldValue[0]) {
@@ -591,7 +594,7 @@ class SettingByUi {
       }
     }
     // notice module.json to delete relative opt
-    this.vsCodeApi.postMessage({
+    vsCodeApi.postMessage({
       command: 'delConfig',
       field,
       key: delKey,
@@ -603,28 +606,10 @@ class SettingByUi {
     let selectTag = document.createElement('select');
     selectTag.name = 'selectType';
     selectTag.id = 'conditionType';
-    this.chooseNum.forEach((item: string) => {
-      let option = document.createElement('option');
-      option.value = item;
-      option.className = 'conditionSelectType';
-      option.innerHTML = item;
-      if (value === item) {
-        option.selected = true;
-      }
-      selectTag.appendChild(option);
-    });
-    selectTag.addEventListener('mousedown', async () => {
+    this.appendSelectOptions(selectTag, value);
+    selectTag.addEventListener('mousedown', () => {
       selectTag.innerHTML = '';
-      await this.chooseNum.forEach((item: string) => {
-        let option = document.createElement('option');
-        option.value = item;
-        option.className = 'conditionSelectType';
-        option.innerHTML = item;
-        if (value === item) {
-          option.selected = true;
-        }
-        selectTag.appendChild(option);
-      });
+      this.appendSelectOptions(selectTag, value);
     });
     selectTag.addEventListener('change', () => {
       let postValue = {
@@ -633,7 +618,7 @@ class SettingByUi {
       };
       let infoKey = elementArray[fitstChild].value;
       if (this.checkIsValid(infoKey)) {
-        this.vsCodeApi.postMessage({
+        vsCodeApi.postMessage({
           command: 'addConfig',
           field: 'package-configuration',
           key: infoKey,
@@ -649,8 +634,21 @@ class SettingByUi {
     elementArray[secondChild] = selectTag;
   }
 
+  private appendSelectOptions(selectTag: HTMLSelectElement, value?: string): void {
+    this.chooseNum.forEach((item: string) => {
+      let option = document.createElement('option');
+      option.value = item;
+      option.className = 'conditionSelectType';
+      option.innerHTML = item;
+      if (value === item) {
+        option.selected = true;
+      }
+      selectTag.appendChild(option);
+    });
+  }
+
   private postErrorInfo(): void {
-    this.vsCodeApi.postMessage({
+    vsCodeApi.postMessage({
       command: 'errorAdd',
       value: 'the first field is empty or undefined, please fill it first',
     });

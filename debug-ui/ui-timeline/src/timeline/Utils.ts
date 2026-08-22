@@ -16,9 +16,7 @@ export function getThreadGroup(records: RecordProps[]): Map<number, [number, str
   let threadsMap = new Map<number, string>();
   records.forEach(record => threadsMap.set(record.threadId, record.threadName));
   // [threadId, threadName][]
-  let threads: [number, string][] = new Array(threadsMap.size);
-  let index: number = 0;
-  Array.from(threadsMap.entries()).map(msg => threads[index++] = [msg[0], msg[1]]);
+  const threads = Array.from(threadsMap.entries());
   threads.sort((record1, record2) => record1[0] - record2[0]);
   let result = new Map<number, [number, string]>();
   for (let i = 0; i < threads.length; i++) {

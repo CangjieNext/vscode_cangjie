@@ -42,7 +42,7 @@ interface RecordsLineProps {
   windowWidth: number;
 
   scrollLayerY: number;
-};
+}
 
 interface RecordIconProps {
   pos: [number, number];
@@ -52,7 +52,7 @@ interface RecordIconProps {
   window: [number, number];
 
   scrollLayerY: number;
-};
+}
 
 interface RecordTooltipProps {
   type: string;
@@ -60,7 +60,7 @@ interface RecordTooltipProps {
   line?: number;
 
   file?: string;
-};
+}
 
 interface RecordTipPos {
   labelX: number;
@@ -68,7 +68,7 @@ interface RecordTipPos {
   labelY: number;
 
   points: number[];
-};
+}
 
 const RecordIcon =
     (props: { isSelected: boolean; showRecord: RecordIconProps; recordsLineTheme: RecordsLineTheme}): JSX.Element => {

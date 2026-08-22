@@ -13,4 +13,4 @@ export interface TimeLinePropsTypeProps {
   initialRecords: RecordProps[];
 
   isThemeDark: boolean;
-};
+}

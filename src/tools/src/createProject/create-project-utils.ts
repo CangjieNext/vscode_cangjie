@@ -77,12 +77,12 @@ export class CreateProjectUtils {
     try {
       fs.mkdirSync(projectRoot);
       const option = { cwd: projectRoot };
-      let cmdStr = Utility.getExecCmd(`cjpm init --name ${projectName}`);
+      let cmdStr = Utility.getExecCmd(`cjpm init --name ${projectName}`, pathSdk);
       if (productType !== ProjectType.EXECUTABLE) {
         const srcPath = path.join(projectRoot, 'src');
         fs.mkdirSync(srcPath);
         fs.writeFileSync(path.join(srcPath, 'demo.cj'), `package ${projectName}\n\n// You can write Cangjie code here.`);
-        cmdStr = Utility.getExecCmd(`cjpm init --type=${productType} --name ${projectName}`);
+        cmdStr = Utility.getExecCmd(`cjpm init --type=${productType} --name ${projectName}`, pathSdk);
       }
       Utility.isCreatedProject = false;
       Utility.outputType = 'executable';

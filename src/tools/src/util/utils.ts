@@ -89,23 +89,18 @@ export class Utility {
     return new Promise((resolve, reject) => {
       const pathSdk = Utility.getCangjieHome();
       if (Utility.checkIsValid(pathSdk)) {
-        switch (type) {
-          case 'cjpm': {
-            const cjpmPath: string = path.join(pathSdk, ...['tools', 'bin', type]);
-            // creating an environment and cjpm create command
-            const cmd = Utility.getExecCmd('cjpm -v');
-            exec(cmd, (error) => {
-              if (Utility.checkIsValid(error)) {
-                reject(error);
-              }
-              resolve(pathSdk);
-            });
-            break;
-          }
-          default:
+        if (type === 'cjpm') {
+          // creating an environment and cjpm create command
+          const cmd = Utility.getExecCmd('cjpm -v');
+          exec(cmd, (error) => {
+            if (Utility.checkIsValid(error)) {
+              reject(error);
+            }
             resolve(pathSdk);
-            break;
+          });
+          return;
         }
+        resolve(pathSdk);
       } else {
         reject(new Error('error: Please download and configure the Cangjie SDK.\n'));
       }
@@ -447,8 +442,7 @@ export class Utility {
     return envPath;
   }
 
-  static getExecCmd(baseExecCmd: string): string {
-    const cangjieHome: string = Utility.getCangjieHome();
+  static getExecCmd(baseExecCmd: string, cangjieHome: string = Utility.getCangjieHome()): string {
     let cmdResult: string = baseExecCmd;
     if (process.platform === 'win32') {
       // the "" is used to handle path with space

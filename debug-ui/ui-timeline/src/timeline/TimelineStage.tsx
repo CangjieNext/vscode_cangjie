@@ -27,7 +27,7 @@ interface TimelineStageProps {
   windowHeight: number;
 
   windowWidth: number;
-};
+}
 
 export const TimelineStage: (props: TimelineStageProps) => JSX.Element = (props: TimelineStageProps): JSX.Element => {
   const {records, totalTimeMille, windowHeight, windowWidth} = props;

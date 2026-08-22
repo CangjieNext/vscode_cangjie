@@ -8,8 +8,6 @@
 
 import * as vscode from 'vscode';
 import * as os from 'os';
-import * as childProcess from 'child_process';
-import * as util from 'util';
 import * as fs from 'fs';
 import * as cp from 'child_process';
 import * as path from 'path';
@@ -54,43 +52,26 @@ export class CjFormat {
       vscode.window.showErrorMessage(error.message);
       return false;
     }
-    let isDirec = stat.isDirectory();
-    if (isDirec) {
-      try {
-        let cmd = `cjfmt -d '${filePath}'`;
-        if (process.platform === 'win32') {
-          // the "" is used to handle path with space in windows
-          cmd = `cjfmt -d "${filePath}"`;
+    const isDirectory = stat.isDirectory();
+    if (!isDirectory && path.extname(filePath) !== '.cj') {
+      vscode.window.showErrorMessage('The plugin only can format Cangjie source code file');
+      return false;
+    }
+    const option = isDirectory ? '-d' : '-f';
+    let cmd = `cjfmt ${option} '${filePath}'`;
+    if (process.platform === 'win32') {
+      // the "" is used to handle path with space in windows
+      cmd = `cjfmt ${option} "${filePath}"`;
+    }
+    try {
+      cp.exec(Utility.getExecCmd(cmd), { cwd: formatedPath }, (_error, _stdout, stderr) => {
+        if (Utility.checkIsValid(stderr)) {
+          OutputHelper.appendLine(`cjfmt check message: ${stderr}`);
         }
-        cp.exec(Utility.getExecCmd(cmd), { cwd: formatedPath }, (error, stdout, stderr) => {
-          if (Utility.checkIsValid(stderr)) {
-            OutputHelper.appendLine(`cjfmt check message: ${stderr}`);
-          }
-        });
-      } catch (err) {
-        vscode.window.showErrorMessage(`Format failed ${err}`);
-        return err;
-      }
-    } else {
-      if (path.extname(filePath) !== '.cj') {
-        vscode.window.showErrorMessage('The plugin only can format Cangjie source code file');
-        return false;
-      }
-      try {
-        let cmd = `cjfmt -f '${filePath}'`;
-        if (process.platform === 'win32') {
-          // the "" is used to handle path with space in windows
-          cmd = `cjfmt -f "${filePath}"`;
-        }
-        cp.exec(Utility.getExecCmd(cmd), { cwd: formatedPath }, (error, stdout, stderr) => {
-          if (Utility.checkIsValid(stderr)) {
-            OutputHelper.appendLine(`cjfmt check message: ${stderr}`);
-          }
-        });
-      } catch (err) {
-        vscode.window.showErrorMessage(`Format failed ${err}`);
-        return err;
-      }
+      });
+    } catch (err) {
+      vscode.window.showErrorMessage(`Format failed ${err}`);
+      return err;
     }
     return true;
   }

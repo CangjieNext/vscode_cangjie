@@ -27,7 +27,7 @@ export interface MainTimelineTheme {
   scalePointer: string;
   scalePointerHighlight: string;
   fontFamily: string;
-};
+}
 
 const MAIN_TIMELINE_LIGHT_THEME: MainTimelineTheme = {
   scaleLine: '#616161',
@@ -55,7 +55,7 @@ export interface RecordsLineTheme {
   font: string;
   fontSize: number;
   fontFamily: string;
-};
+}
 
 const RECORDS_LINE_DARK_THEME: RecordsLineTheme = {
   line: '#E7E7E7',
@@ -83,7 +83,7 @@ export interface TooltipTheme {
   font: string;
   fontSize: number;
   fontFamily: string;
-};
+}
 
 const TOOLTIP_LIGHT_THEME: TooltipTheme = {
   fill: '#f5f4f4',

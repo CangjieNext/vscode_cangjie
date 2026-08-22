@@ -97,13 +97,6 @@ export class CjlintOnSave {
     if (!fs.existsSync(folderPath) || Utility.checkIsValid(CjlintOnSave.cjlintPorcess)) {
       return;
     }
-    let envConfig = 'env.windows';
-    if (process.platform === 'linux') {
-      envConfig = 'env.linux';
-    } else if (process.platform === 'darwin') {
-      envConfig = 'env.osx';
-    }
-    const env = vscode.workspace.getConfiguration('terminal.integrated').get(envConfig) as NodeJS.ProcessEnv;
     const outputFolder = Utility.getCjRootProjectPath();
     const outputPath = path.join(outputFolder, 'report'); // cjCodeCheckReport
     const cjlintExcludePath = path.join(outputFolder, CJLINT_CONFIG_NAME);

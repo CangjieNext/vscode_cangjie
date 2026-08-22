@@ -170,7 +170,7 @@ export class CangjieDebugConfigurationProvider implements vscode.DebugConfigurat
       config.program = await selectFileFromWorkspace(folder);
       if (config.program && folder) {
         await updatePlaceholderInLaunchJson('program', debuggeePathPlaceholder, config.program,
-          <CangjieDebugConfiguration>config, folder);
+          config, folder);
       } else {
         throw new Error('target program not set');
       }
@@ -180,7 +180,7 @@ export class CangjieDebugConfigurationProvider implements vscode.DebugConfigurat
     } else {
       if (config.buildBeforeLaunch !== undefined) {
         const buildDir = await getBuildBinaryPath(config.vmMode);
-        await updateFieldInLaunchJson('program', buildDir, <CangjieDebugConfiguration>config, folder,
+        await updateFieldInLaunchJson('program', buildDir, config, folder,
           (src, dest) =>
             src.type === dest.type && src.name === dest.name && src.request === dest.request &&
             src.buildBeforeLaunch !== undefined && src.program !== buildDir);
@@ -215,7 +215,7 @@ export class CangjieDebugConfigurationProvider implements vscode.DebugConfigurat
       };
     }
     // 如果env选项为空或者依赖项改变，更新launch.json中env配置项
-    await updateFieldInLaunchJson('env', config.env, <CangjieDebugConfiguration>config, folder,
+    await updateFieldInLaunchJson('env', config.env, config, folder,
       (src, dest) => true);
   }
 

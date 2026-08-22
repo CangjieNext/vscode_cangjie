@@ -1,4 +1,5 @@
 .vscode/**
+.gitcode/**
 .cloudbuild/**
 node_modules/**
 src/**
@@ -10,5 +11,6 @@ webpack.config.js
 webpack.common.js
 webpack.dev.js
 build.yml.lock
-doc/**
+BUILD.md
+docs/**
 debug-ui/**
