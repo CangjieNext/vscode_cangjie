@@ -10,7 +10,7 @@ export const GotoRecordPointRequestType = new RequestResponseType<GotoRecordPoin
 
 export interface GotoRecordPointProps {
   recordPointId?: number;
-};
+}
 
 export function sendGotoRecordPointRequest(props: GotoRecordPointProps, setSelectedRecordId: (recordId: number | undefined) => void): void {
   const {recordPointId} = props;

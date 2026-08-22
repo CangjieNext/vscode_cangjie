@@ -6,8 +6,8 @@
  * See https://cangjie-lang.cn/pages/LICENSE for license information.
  */
 
-import { ALWAYS_ENABLED_FEATURES, EXPERIMENTAL, FEATURE, LSP_COMMON_SPECIFIC_PATHS, PACKAGE, PROFILE, SOURCE_SET, SRC_DIR } from './constantNums';
-import { CommonSpecificPath, Feature, SourceSet } from './cjpm-config-data';
+import { ALWAYS_ENABLED_FEATURES, EXPERIMENTAL, LSP_COMMON_SPECIFIC_PATHS, PACKAGE, PROFILE, SOURCE_SET, SRC_DIR } from './constantNums';
+import { CommonSpecificPath, SourceSet } from './cjpm-config-data';
 import { Utility } from './utils';
 import * as vscode from 'vscode';
 import * as path from 'path';
@@ -80,10 +80,6 @@ export class CommonSpecificUtility {
         continue;
       }
       specificPaths.push({type, name, features, path: srcPath});
-    }
-    const features: Feature[] = [];
-    if (Object.prototype.hasOwnProperty.call(cjpmContent, FEATURE)) {
-      features.push(cjpmContent[FEATURE]);
     }
     const targetFeatures: string[] = [];
     targetFeatures.push(...baseTargetFeatures);

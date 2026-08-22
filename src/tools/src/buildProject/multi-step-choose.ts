@@ -6,7 +6,7 @@
  * See https://cangjie-lang.cn/pages/LICENSE for license information.
  */
 
-import type { QuickPickItem, Disposable, QuickInput, InputBoxOptions } from 'vscode';
+import type { QuickPickItem, Disposable, QuickInput, InputBoxOptions, QuickInputButton } from 'vscode';
 import { window, QuickInputButtons } from 'vscode';
 import { CustomAction } from '../util/constant-num';
 import { Utility } from '../util/utils';
@@ -30,6 +30,17 @@ interface InputBoxParameters {
   button?: QuickInputButtons[];
   step?: number;
   totalSteps?: number;
+}
+
+function createButtonHandler(resolve: (value: unknown) => void, reject: (reason?: unknown) => void):
+  (item: QuickInputButton) => void {
+  return (item: QuickInputButton): void => {
+    if (item === QuickInputButtons.Back) {
+      reject(CustomAction.back);
+    } else {
+      resolve(item);
+    }
+  };
 }
 
 export class MultiStepChoose {
@@ -68,13 +79,7 @@ export class MultiStepChoose {
             pickStep.canSelectMany = true;
           }
           disposables.push(
-            pickStep.onDidTriggerButton((item) => {
-              if (item === QuickInputButtons.Back) {
-                reject(CustomAction.back);
-              } else {
-                resolve(<unknown>item);
-              }
-            }),
+            pickStep.onDidTriggerButton(createButtonHandler(resolve, reject)),
             pickStep.onDidHide(() => {
               reject(CustomAction.cancel);
             }),
@@ -122,13 +127,7 @@ export class MultiStepChoose {
         input.title = (step !== null && step !== undefined && step !== 0) ? `${inputBoxOptions.title} (${step}/${totalSteps})` : inputBoxOptions.title;
         input.buttons = [...(Utility.checkIsValid(button) ? [QuickInputButtons.Back] : [])];
         disposables.push(
-          input.onDidTriggerButton((item) => {
-            if (item === QuickInputButtons.Back) {
-              reject(CustomAction.back);
-            } else {
-              resolve(<unknown>item);
-            }
-          }),
+          input.onDidTriggerButton(createButtonHandler(resolve, reject)),
           input.onDidAccept(async () => {
             const didAcceptValue = input.value;
             input.enabled = false;

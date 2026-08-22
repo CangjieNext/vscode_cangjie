@@ -6,6 +6,8 @@
 
 详情请参阅[用户手册](https://gitcode.com/Cangjie/vscode_cangjie/blob/main/docs/summary_cjnative.md)。
 
+从源码构建和生成 VSIX 安装包，请参阅[编译与打包指导](./BUILD.md)。
+
 ## 要求
 
 - Visual Studio Code 1.65 或更高版本

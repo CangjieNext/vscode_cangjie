@@ -23,7 +23,7 @@ export interface RecordMessageRequestProps {
   requireStaticVariables?: boolean;
 
   monitorVariables?: MonitorVariable[];
-};
+}
 
 export interface MonitorVariable {
   id: number;
@@ -35,7 +35,7 @@ export interface MonitorVariable {
   type?: string;
 
   value?: string;
-};
+}
 
 export interface RecordMessageProps {
   recordPointId: number;
@@ -47,8 +47,8 @@ export interface RecordMessageProps {
   line?: number;
 
   monitorVariables?: MonitorVariable[];
-};
+}
 
 export interface RecordMessageResponseProps {
   recordMessages: RecordMessageProps[];
-};
+}

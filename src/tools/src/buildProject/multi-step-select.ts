@@ -169,11 +169,6 @@ async function enterConditionOpt(pick: MultiStepChoose, state: Partial<State>, t
     canPickMany: true,
   });
   if (Utility.checkIsValid(buildCnd)) {
-    let cndConfiguration = '';
-    (buildCnd as string[]).forEach((cfg: string) => {
-      cndConfiguration += `${cfg}, `;
-    });
-    cndConfiguration.replace(/(?<id>,\x20)$/, ' ');
     state.pickedParams[cndIndex] = `--${[...new Set(buildCnd as string[])].join(' --')}`;
     state.extraPickedParams = state.pickedParams.join(' ').trim();
   } else {
@@ -396,7 +391,7 @@ async function specifyOneTest(pick: MultiStepChoose, state: Partial<State>, pick
   }
   if (pickedParam.testItem === 'modules') {
     return (curPick: MultiStepChoose) => specifyModule(curPick, state, pickItemsContent, title);
-  } if (pickedParam.testItem === 'member') {
+  } else if (pickedParam.testItem === 'member') {
     return (curPick: MultiStepChoose) => specifyOneMember(curPick, state, pickItemsContent, title);
   } else {
     return (curPick: MultiStepChoose) => specifyPath(curPick, state, pickItemsContent, title);

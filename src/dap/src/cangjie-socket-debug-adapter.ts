@@ -100,24 +100,24 @@ export class CangjieSocketDebugAdapter implements DebugAdapter {
     this.serverMsgEventEmitter.fire(terminatedEvent);
   }
 
-  public addMessageFilter(msgType: DapMessageType, msgId: DapMessageIdentity,
-    filter: (msg: DebugProtocol.ProtocolMessage) => (DebugProtocol.ProtocolMessage | undefined)): Disposable {
+  public addMessageFilter<T extends DebugProtocol.ProtocolMessage>(msgType: DapMessageType, msgId: DapMessageIdentity,
+    filter: (msg: T) => (T | undefined)): Disposable {
     const key = CangjieSocketDebugAdapter.getMapKey(msgType, msgId);
     if (!this.filterMap.has(key)) {
       this.filterMap.set(key, []);
     }
-    const msgFilter = new DapMessageFilter(filter);
+    const msgFilter = new DapMessageFilter(msg => filter(msg as T));
     this.filterMap.get(key).push(msgFilter);
     return msgFilter.disposable;
   }
 
-  public addMessageListener(msgType: DapMessageType, msgId: DapMessageIdentity,
-    listener: (msg: DebugProtocol.ProtocolMessage) => void): Disposable {
+  public addMessageListener<T extends DebugProtocol.ProtocolMessage>(msgType: DapMessageType, msgId: DapMessageIdentity,
+    listener: (msg: T) => void): Disposable {
     const key = CangjieSocketDebugAdapter.getMapKey(msgType, msgId);
     if (!this.listenerMap.has(key)) {
       this.listenerMap.set(key, []);
     }
-    const msgListener = new DapMessageListener(listener);
+    const msgListener = new DapMessageListener(msg => listener(msg as T));
     this.listenerMap.get(key).push(msgListener);
     return msgListener.disposable;
   }
@@ -195,19 +195,17 @@ export class CangjieSocketDebugAdapter implements DebugAdapter {
   private preHandleMessage(message: DebugProtocol.ProtocolMessage): DebugProtocol.ProtocolMessage | undefined {
     let identity;
     switch (message.type) {
-      case 'request': {
-        const request = <DebugProtocol.Request>message;
-        identity = request.command;
-        break;
-      }
+      case 'request':
       case 'response': {
-        const response = <DebugProtocol.Response>message;
-        identity = response.command;
+        if ('command' in message) {
+          identity = message.command;
+        }
         break;
       }
       case 'event': {
-        const event = <DebugProtocol.Event>message;
-        identity = event.event;
+        if ('event' in message) {
+          identity = message.event;
+        }
         break;
       }
       default:

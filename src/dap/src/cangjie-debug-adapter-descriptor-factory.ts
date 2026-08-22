@@ -257,22 +257,19 @@ export class CangjieDebugAdapterDescriptorFactory implements vscode.DebugAdapter
     const debugAdapter = new CangjieSocketDebugAdapter(port, config);
     await debugAdapter.init();
     // terminate when step out of main method
-    debugAdapter.addMessageListener('response', 'stepOut', msg => {
-      const response = <DebugProtocol.StepOutResponse>msg;
+    debugAdapter.addMessageListener('response', 'stepOut', (response: DebugProtocol.StepOutResponse) => {
       if (!response.success && response.message.indexOf('not meaningful in the outermost frame.') >= 0) {
         debugAdapter.terminate();
       }
     });
     // handle debuggee exited with error
-    debugAdapter.addMessageListener('event', 'exited', msg => {
-      const exited = <DebugProtocol.ExitedEvent>msg;
+    debugAdapter.addMessageListener('event', 'exited', (exited: DebugProtocol.ExitedEvent) => {
       if (exited.body.exitCode !== 0) {
         vscode.window.showErrorMessage(`target program exited with code ${exited.body.exitCode}`);
       }
     });
     // set the default number of variable views
-    debugAdapter.addMessageFilter('request', 'variables', msg => {
-      const request = <DebugProtocol.VariablesRequest>msg;
+    debugAdapter.addMessageFilter('request', 'variables', (request: DebugProtocol.VariablesRequest) => {
       if (request.arguments.start === undefined) {
         request.arguments.start = 0;
         request.arguments.count = 1000;
@@ -304,21 +301,18 @@ export class CangjieDebugAdapterDescriptorFactory implements vscode.DebugAdapter
       return null;
     });
     // Close remaining terminal
-    debugAdapter.addMessageListener('request', 'runInTerminal', msg => {
-      const request = <DebugProtocol.RunInTerminalRequest>msg;
+    debugAdapter.addMessageListener('request', 'runInTerminal', (request: DebugProtocol.RunInTerminalRequest) => {
       vscode.window.terminals.find(t => t.name === request.arguments.title)?.dispose();
       this.debuggeeTerminalName = request.arguments.title;
       return request;
     });
     // get pid of the shell that started the debuggee
-    debugAdapter.addMessageFilter('response', 'runInTerminal', msg => {
-      const response = <DebugProtocol.RunInTerminalResponse>msg;
+    debugAdapter.addMessageFilter('response', 'runInTerminal', (response: DebugProtocol.RunInTerminalResponse) => {
       this.shellProcessId = response.body.shellProcessId;
       return response;
     });
     // support debug in console.
-    debugAdapter.addMessageFilter('request', 'evaluate', msg => {
-      const request = <DebugProtocol.EvaluateRequest>msg;
+    debugAdapter.addMessageFilter('request', 'evaluate', (request: DebugProtocol.EvaluateRequest) => {
       if (request.arguments.context !== 'repl') {
         return request;
       }
@@ -377,8 +371,7 @@ export class CangjieDebugAdapterDescriptorFactory implements vscode.DebugAdapter
       }
     });
     // configure Cangjie environment variables for remote launch
-    debugAdapter.addMessageListener('request', 'launch', msg => {
-      const request = <DebugProtocol.LaunchRequest>msg;
+    debugAdapter.addMessageListener('request', 'launch', (request: DebugProtocol.LaunchRequest) => {
       request.arguments['env'] = CangjieDependencyBuilder.appendRuntimePath(request.arguments['env']);
       if (config.vmMode === true) {
         if (!request.arguments['scriptCommands']) {
@@ -402,14 +395,13 @@ export class CangjieDebugAdapterDescriptorFactory implements vscode.DebugAdapter
       request.arguments['showStaticGlobalVars'] = true;
       return request;
     });
-    debugAdapter.addMessageListener('request', 'attach', msg => {
-      const request = <DebugProtocol.AttachRequest>msg;
+    debugAdapter.addMessageListener('request', 'attach', (request: DebugProtocol.AttachRequest) => {
       request.arguments['showStaticGlobalVars'] = true;
       return request;
     });
     // Limit the creation of data breakpoints to a maximum of 4
-    debugAdapter.addMessageFilter('request', 'setDataBreakpoints', msg => {
-      const request = <DebugProtocol.SetDataBreakpointsRequest>msg;
+    debugAdapter.addMessageFilter('request', 'setDataBreakpoints',
+      (request: DebugProtocol.SetDataBreakpointsRequest) => {
       if (request.arguments.breakpoints.length > maximumNumberOfDataBreakpoint) {
         vscode.window.showErrorMessage('The number of dataBreakpoints is not allowed to exceed four.');
         return null;
@@ -417,8 +409,7 @@ export class CangjieDebugAdapterDescriptorFactory implements vscode.DebugAdapter
       return request;
     });
     // Combined display of global variables and static variables
-    debugAdapter.addMessageListener('response', 'scopes', msg => {
-      const response = <DebugProtocol.ScopesResponse>msg;
+    debugAdapter.addMessageListener('response', 'scopes', (response: DebugProtocol.ScopesResponse) => {
       if (config.vmMode === true) {
         for (let i = 0; i < response.body.scopes.length; i++) {
           if (response.body.scopes[i].name === 'Globals') {
@@ -433,8 +424,7 @@ export class CangjieDebugAdapterDescriptorFactory implements vscode.DebugAdapter
       }
       return response;
     });
-    debugAdapter.addMessageFilter('request', 'setBreakpoints', msg => {
-      const request = <DebugProtocol.SetBreakpointsRequest>msg;
+    debugAdapter.addMessageFilter('request', 'setBreakpoints', (request: DebugProtocol.SetBreakpointsRequest) => {
       if (request.arguments.breakpoints.length > 0) {
         if (getOs() === 'win') {
           request.arguments.source.path = request.arguments.source.path.toLowerCase();
@@ -453,8 +443,8 @@ export class CangjieDebugAdapterDescriptorFactory implements vscode.DebugAdapter
       }
       return request;
     });
-    debugAdapter.addMessageFilter('request', 'setFunctionBreakpoints', msg => {
-      const request = <DebugProtocol.SetFunctionBreakpointsRequest>msg;
+    debugAdapter.addMessageFilter('request', 'setFunctionBreakpoints',
+      (request: DebugProtocol.SetFunctionBreakpointsRequest) => {
       if (request.arguments.breakpoints.length > 0) {
         let functionBreakpoints: DebugProtocol.FunctionBreakpoint[] = [];
         for (let i = 0; i < request.arguments.breakpoints.length; i++) {
@@ -478,16 +468,14 @@ export class CangjieDebugAdapterDescriptorFactory implements vscode.DebugAdapter
       utils.sendRequest('cacheDataConfig', cacheDataConfigArguments);
       return msg;
     });
-    debugAdapter.addMessageFilter('response', 'cacheDataConfig', msg => {
-      const response = <DebugProtocol.Response>msg;
+    debugAdapter.addMessageFilter('response', 'cacheDataConfig', (response: DebugProtocol.Response) => {
       if (!response.success) {
         vscode.window.showErrorMessage(response.message);
       }
       return response;
     });
 
-    debugAdapter.addMessageFilter('event', 'output', msg => {
-      let event = <DebugProtocol.OutputEvent>msg;
+    debugAdapter.addMessageFilter('event', 'output', (event: DebugProtocol.OutputEvent) => {
       if (event.body?.category === 'stdout') {
         if (event.body.output && event.body.output === reverseBreakpointLogMsg + '\n') {
           return null;
@@ -496,12 +484,11 @@ export class CangjieDebugAdapterDescriptorFactory implements vscode.DebugAdapter
           event.body.output += '\n';
         }
       }
-      return msg;
+      return event;
     });
 
     if (CangjieReverseDebug.supportReverseDebug(config.vmMode)) {
-      debugAdapter.addMessageFilter('response', 'undo', msg => {
-        const response = <DebugProtocol.Response>msg;
+      debugAdapter.addMessageFilter('response', 'undo', (response: DebugProtocol.Response) => {
         if (response.success) {
           let { isCangjieReverseDebugMode } = CangjieReverseDebug.getReverseDebug();
           vscode.commands.executeCommand('setContext', 'isCangjieReverseDebugMode', !isCangjieReverseDebugMode);
@@ -515,34 +502,16 @@ export class CangjieDebugAdapterDescriptorFactory implements vscode.DebugAdapter
         }
         return response;
       });
-      debugAdapter.addMessageFilter('response', 'reverseStep', msg => {
-        const response = <DebugProtocol.Response>msg;
+      const handleReverseDebugResponse = (response: DebugProtocol.Response): DebugProtocol.Response => {
         if (!response.success) {
           vscode.window.showErrorMessage(response.message);
         }
         return response;
-      });
-      debugAdapter.addMessageFilter('response', 'reverseContinue', msg => {
-        const response = <DebugProtocol.Response>msg;
-        if (!response.success) {
-          vscode.window.showErrorMessage(response.message);
-        }
-        return response;
-      });
-      debugAdapter.addMessageFilter('response', 'continueInReverse', msg => {
-        const response = <DebugProtocol.Response>msg;
-        if (!response.success) {
-          vscode.window.showErrorMessage(response.message);
-        }
-        return response;
-      });
-      debugAdapter.addMessageFilter('response', 'stepInReverse', msg => {
-        const response = <DebugProtocol.Response>msg;
-        if (!response.success) {
-          vscode.window.showErrorMessage(response.message);
-        }
-        return response;
-      });
+      };
+      debugAdapter.addMessageFilter('response', 'reverseStep', handleReverseDebugResponse);
+      debugAdapter.addMessageFilter('response', 'reverseContinue', handleReverseDebugResponse);
+      debugAdapter.addMessageFilter('response', 'continueInReverse', handleReverseDebugResponse);
+      debugAdapter.addMessageFilter('response', 'stepInReverse', handleReverseDebugResponse);
       debugAdapter.addMessageFilter('event', 'stopped', msg => {
         if (CangjieReverseDebug.supportReverseDebug(config.vmMode) && !config[reverseDebugConfigName].isCangjieReverseDebugMode) {
           config[lastStoppedEvent] = msg;
@@ -573,8 +542,7 @@ export class CangjieDebugAdapterDescriptorFactory implements vscode.DebugAdapter
       });
     }
 
-    debugAdapter.addMessageListener('response', 'variables', msg => {
-      const response = <DebugProtocol.VariablesResponse>msg;
+    debugAdapter.addMessageListener('response', 'variables', (response: DebugProtocol.VariablesResponse) => {
       if (isEmpty(response.body) || isEmpty(response.body.variables)) {
         return response;
       }
@@ -598,8 +566,7 @@ export class CangjieDebugAdapterDescriptorFactory implements vscode.DebugAdapter
     });
 
     // Adjusting the Capability of CJVM
-    debugAdapter.addMessageListener('response', 'initialize', msg => {
-      let response = <DebugProtocol.InitializeResponse>msg;
+    debugAdapter.addMessageListener('response', 'initialize', (response: DebugProtocol.InitializeResponse) => {
       if (config.vmMode === true) {
         response.body.supportSuspendDebuggee = false;
         response.body.supportsDataBreakpoints = false;

@@ -18,4 +18,4 @@ export interface RecordProps {
   threadName: string;
 
   type: string;
-};
+}

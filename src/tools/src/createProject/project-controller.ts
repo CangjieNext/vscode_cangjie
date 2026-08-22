@@ -6,7 +6,7 @@
  * See https://cangjie-lang.cn/pages/LICENSE for license information.
  */
 
-import type {Extension, ExtensionContext} from 'vscode';
+import type {Extension, ExtensionContext, QuickPickItem} from 'vscode';
 import * as vscode from 'vscode';
 import {commands, Disposable, extensions, window} from 'vscode';
 import {Commands} from './command';
@@ -14,8 +14,6 @@ import {Utility} from '../util/utils';
 import {OutputHelper} from '../util/output-helper';
 import type {
   CjCompileBackendMetadata,
-  CjCompileBackendType,
-  CjProjectType,
   CjProjectTypeQuickPick,
   ProjectType
 } from './project-controller-type';
@@ -37,8 +35,8 @@ export class ProjectController implements Disposable {
           window.showInformationMessage('This command applies only to Linux, Windows and Mac.');
           return;
         }
-        Utility.isExistSdk('cjpm').then((data: string) => {
-          this.createCangjieProject(data);
+        Utility.isExistSdk('cjpm').then(() => {
+          this.createCangjieProject();
         }).catch((error) => {
           OutputHelper.appendLine(error);
         });
@@ -50,16 +48,8 @@ export class ProjectController implements Disposable {
     this.disposable.dispose();
   }
 
-  async createCangjieProject(pathSdk: string): Promise<void> {
-    const items: CjCompileBackendTypeQuickPick[] = compileBackendTypes.map((type: CjCompileBackendType) => {
-      return {
-        label: type.displayName,
-        description: type.description,
-        detail: Utility.checkIsValid(type.metadata.extensionName) ?
-          `Provided by $(extensions) ${type.metadata.extensionName}` : type.detail,
-        metadata: type.metadata,
-      };
-    });
+  async createCangjieProject(): Promise<void> {
+    const items: CjCompileBackendTypeQuickPick[] = compileBackendTypes.map(toQuickPickItem);
     const choice = await window.showQuickPick(items, {
       ignoreFocusOut: true,
       placeHolder: 'Select the compile backend',
@@ -67,26 +57,18 @@ export class ProjectController implements Disposable {
     if (!Utility.checkIsValid(choice) || !(await ensureExtension(choice.label, choice.metadata))) {
       return;
     }
-    let curPathSdk = pathSdk;
-    if (choice.metadata.type === CompileBackendType.CJVM) {
-      curPathSdk = <string>vscode.workspace.getConfiguration('CangjieSdkPath').get('CJVMBackend');
-    } else {
-      curPathSdk = <string>vscode.workspace.getConfiguration('CangjieSdkPath').get('CJNativeBackend');
+    const backendSetting = choice.metadata.type === CompileBackendType.CJVM ? 'CJVMBackend' : 'CJNativeBackend';
+    const curPathSdk = vscode.workspace.getConfiguration('CangjieSdkPath').get<string>(backendSetting, '');
+    if (!Utility.checkIsValid(curPathSdk)) {
+      window.showErrorMessage(`The ${choice.metadata.type} SDK path has not been configured properly.`);
+      return;
     }
     await chooseOutputType(choice.metadata.type, curPathSdk);
   }
 }
 
 async function chooseOutputType(compileBackend: CompileBackendType, pathSdk: string): Promise<void> {
-  const items: CjProjectTypeQuickPick[] = projectTypes.map((type: CjProjectType) => {
-    return {
-      label: type.displayName,
-      description: type.description,
-      detail: Utility.checkIsValid(type.metadata.extensionName) ?
-        `Provided by $(extensions) ${type.metadata.extensionName}` : type.detail,
-      metadata: type.metadata,
-    };
-  });
+  const items: CjProjectTypeQuickPick[] = projectTypes.map(toQuickPickItem);
   const choice = await window.showQuickPick(items, {
     ignoreFocusOut: true,
     placeHolder: 'Select the output type',
@@ -95,6 +77,21 @@ async function chooseOutputType(compileBackend: CompileBackendType, pathSdk: str
     return;
   }
   await createProject(choice.metadata.type, compileBackend, pathSdk);
+}
+
+function toQuickPickItem<T>(type: {
+  displayName: string;
+  description?: string;
+  detail?: string;
+  metadata: T & {extensionName: string};
+}): QuickPickItem & {metadata: T} {
+  return {
+    label: type.displayName,
+    description: type.description,
+    detail: Utility.checkIsValid(type.metadata.extensionName) ?
+      `Provided by $(extensions) ${type.metadata.extensionName}` : type.detail,
+    metadata: type.metadata,
+  };
 }
 
 async function ensureExtension(typeName: string, metaData: CjCompileBackendMetadata): Promise<boolean> {

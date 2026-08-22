@@ -68,25 +68,17 @@ function registerCjpmLockCreateWatcher(context: vscode.ExtensionContext, cangjie
   if (!vscode.workspace.workspaceFolders?.[0] || Utility.getIsSingleFileMode()) {
     return;
   }
+  const handleModuleLockUpdate = async (): Promise<void> => {
+    if (!cangjieContext.getLspState()) {
+      return;
+    }
+    await clearAndClangdActivate(cangjieContext, context, outputChannel);
+  };
   const moduleLockCreateWatcher = vscode.workspace.createFileSystemWatcher(new vscode.RelativePattern(vscode.workspace.workspaceFolders?.[0], '**/cjpm.lock'));
-  context.subscriptions.push(
-    moduleLockCreateWatcher.onDidCreate(async (e) => {
-      if (!cangjieContext.getLspState()) {
-        return;
-      }
-      await clearAndClangdActivate(cangjieContext, context, outputChannel);
-    }),
-  );
+  context.subscriptions.push(moduleLockCreateWatcher.onDidCreate(handleModuleLockUpdate));
 
   const moduleLockChangeWatcher = vscode.workspace.createFileSystemWatcher(new vscode.RelativePattern(vscode.workspace.workspaceFolders?.[0], '**/cjpm.lock'));
-  context.subscriptions.push(
-    moduleLockChangeWatcher.onDidChange(async (e) => {
-      if (!cangjieContext.getLspState()) {
-        return;
-      }
-      await clearAndClangdActivate(cangjieContext, context, outputChannel);
-    }),
-  );
+  context.subscriptions.push(moduleLockChangeWatcher.onDidChange(handleModuleLockUpdate));
 }
 
 function registerRestartLspServer(context: vscode.ExtensionContext, cangjieContext: ChangjieContext, outputChannel: OutputChannel): void {

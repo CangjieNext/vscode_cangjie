@@ -21,4 +21,4 @@ export enum MessageLevelEnum {
 export interface ShowMessageTypeProps {
   level: MessageLevelEnum;
   message: string;
-};
+}

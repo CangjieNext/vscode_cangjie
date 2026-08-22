@@ -9,4 +9,4 @@ export const StoppedType = new EventType<StoppedTypeProps>('Stopped');
 
 export interface StoppedTypeProps {
   recordId: number;
-};
+}

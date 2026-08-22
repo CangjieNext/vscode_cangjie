@@ -16,7 +16,7 @@ export interface TimelineRootProps {
   initialRecords: RecordProps[];
 
   initialThemeDark: boolean;
-};
+}
 
 export const TimelineRoot: (props: TimelineRootProps) => JSX.Element = (props: TimelineRootProps): JSX.Element => {
   const {initialRecords, initialThemeDark} = props;
