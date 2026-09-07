@@ -49,6 +49,8 @@ describe.each<[string, Resolver]>([
 test.each([
   'src/lsp/src/utils/utils.ts',
   'src/tools/src/util/utils.ts',
+  'src/tools/src/createProject/view-controller.ts',
+  'src/tools/src/createProject/project-controller.ts',
 ])('%s routes SDK settings through the resolver', sourcePath => {
   const source = fs.readFileSync(path.resolve(__dirname, '../../..', sourcePath), 'utf8');
   expect(source).toContain('expandWorkspacePlaceholders');

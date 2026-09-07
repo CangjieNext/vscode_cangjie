@@ -13,6 +13,8 @@ import { Utility } from '../util/utils';
 import { OutputHelper } from '../util/output-helper';
 import { Commands } from './command';
 import { CreateProjectUtils } from './create-project-utils';
+import {expandWorkspacePlaceholders} from '../util/sdk-path-utils';
+import {workspace} from 'vscode';
 
 export class ViewController {
   private disposable: vscode.Disposable;
@@ -71,6 +73,7 @@ export class ViewController {
           } else {
             curPathSdk = <string>vscode.workspace.getConfiguration('CangjieSdkPath').get('CJVMBackend');
           }
+          curPathSdk = expandWorkspacePlaceholders(curPathSdk, workspace.workspaceFolders?.[0]?.uri.fsPath);
           this.finishSetting(message, curPathSdk, CreateProjectUtils.panel);
           return;
         default:
