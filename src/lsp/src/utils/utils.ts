@@ -233,10 +233,11 @@ export class Utility {
     // Single file mode: skip DLL copy, just set SDK env vars
     if (Utility.getIsSingleFileMode()) {
       const envMap: Map<string, string> = await Utility.getScriptEnv();
+      const pathValue = Utility.getEnvValue(envMap, 'PATH') ?? '';
       if (!envMap.has('CANGJIE_HOME')) {
-        return { PATH: `${envMap.get('Path')};${serverDir}` };
+        return { PATH: `${pathValue};${serverDir}` };
       }
-      return { PATH: `${envMap.get('Path')};${serverDir}`, CANGJIE_PATH: envMap.get('CANGJIE_HOME') };
+      return { PATH: `${pathValue};${serverDir}`, CANGJIE_PATH: envMap.get('CANGJIE_HOME') };
     }
 
     const targetDir = await Utility.getTargetDir();
@@ -299,10 +300,11 @@ export class Utility {
       filesEnvPath = filesEnvPath.substring(0, filesEnvPath.length - 1);
     }
     const envMap: Map<string, string> = await Utility.getScriptEnv();
+    const pathValue = Utility.getEnvValue(envMap, 'PATH') ?? '';
     if (envMap.get('CANGJIE_HOME') === undefined) {
-      return { PATH: `${envMap.get('Path')};${serverDir};${filesEnvPath}` };
+      return { PATH: `${pathValue};${serverDir};${filesEnvPath}` };
     }
-    return { PATH: `${envMap.get('Path')};${serverDir};${filesEnvPath}`, CANGJIE_PATH: envMap.get('CANGJIE_HOME') };
+    return { PATH: `${pathValue};${serverDir};${filesEnvPath}`, CANGJIE_PATH: envMap.get('CANGJIE_HOME') };
   }
 
   static async getMacNeedEnv(serverDir: string): Promise<unknown> {
@@ -349,7 +351,9 @@ export class Utility {
         scriptPath = `bash -c "source ${envsetupPath} && export TEMP_DYLD_FALLBACK_LIBRARY_PATH=\\$DYLD_FALLBACK_LIBRARY_PATH && export TEMP_DYLD_LIBRARY_PATH=\\$DYLD_LIBRARY_PATH`;
         envCmd = 'env"';
       }
-      const command = `${scriptPath} && ${envCmd}`;
+      // cmd.exe uses the system code page by default. Force UTF-8 so paths with
+      // non-ASCII characters survive the stdout decoding performed by Node.js.
+      const command = process.platform === 'win32' ? `chcp 65001 > nul && ${scriptPath} && ${envCmd}` : `${scriptPath} && ${envCmd}`;
       childProcess.exec(command, (error, stdout, stderr) => {
         if (error) {
           resolve(Utility.convertEnvToMap(process.env));
@@ -390,6 +394,20 @@ export class Utility {
     if (key) {
       envMap.set(key, value);
     }
+  }
+
+  static getEnvValue(envMap: Map<string, string>, key: string): string | undefined {
+    const exactValue = envMap.get(key);
+    if (exactValue !== undefined || process.platform !== 'win32') {
+      return exactValue;
+    }
+    const normalizedKey = key.toLowerCase();
+    for (const [envKey, value] of envMap) {
+      if (envKey.toLowerCase() === normalizedKey) {
+        return value;
+      }
+    }
+    return undefined;
   }
 
   static convertEnvToMap(env: NodeJS.ProcessEnv): Map<string, string> {
