@@ -54,3 +54,22 @@ test.each([
   expect(source).toContain('expandWorkspacePlaceholders');
   expect(source).toContain('workspace.workspaceFolders?.[0]?.uri.fsPath');
 });
+
+test.each(['package.json', 'src/dap/package.json'])(
+  '%s documents the preferred workspace placeholder for both backends',
+  manifestPath => {
+    const manifest = JSON.parse(
+      fs.readFileSync(path.resolve(__dirname, '../../..', manifestPath), 'utf8'),
+    );
+    const entries = Array.isArray(manifest.contributes.configuration)
+      ? manifest.contributes.configuration
+      : [manifest.contributes.configuration];
+    const properties = Object.assign({}, ...entries.map(entry => entry.properties || {}));
+
+    for (const settingName of ['CangjieSdkPath.CJNativeBackend', 'CangjieSdkPath.CJVMBackend']) {
+      const setting = properties[settingName];
+      const description = setting.markdownDescription || setting.description;
+      expect(description).toContain('${workspaceFolder}');
+    }
+  },
+);

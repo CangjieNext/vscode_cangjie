@@ -95,13 +95,13 @@
                     "CangjieSdkPath.CJNativeBackend": {
                         "type": "string",
                         "default": "",
-                        "description": "The absolute path to CJNative-sdk, e.g.: /path/to/CJNative/cangjie",
+                        "description": "The absolute path to CJNative-sdk, e.g.: /path/to/CJNative/cangjie. The ${workspaceFolder} placeholder can be used for a path relative to the first workspace folder.",
                         "order": 1
                     },
                     "CangjieSdkPath.CJVMBackend": {
                         "type": "string",
                         "default": "",
-                        "description": "(Linux Only)The absolute path to CJVM-sdk, e.g.: /path/to/CJVM/cangjie",
+                        "description": "(Linux Only) The absolute path to CJVM-sdk, e.g.: /path/to/CJVM/cangjie. The ${workspaceFolder} placeholder can be used for a path relative to the first workspace folder.",
                         "order": 2
                     },
                     "CangjieSdk.Option": {

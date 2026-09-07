@@ -120,12 +120,12 @@
                         "type": "string",
                         "default": "",
                         "order": 1,
-                        "markdownDescription": "The absolute path to CJNative-sdk, e.g.: /path/to/CJNative/cangjie. You can configure the SDK by accessing the [SDK Configuration](command:cangjie.sdk.manager.view)."
+                        "markdownDescription": "The absolute path to CJNative-sdk, e.g.: /path/to/CJNative/cangjie. The ${workspaceFolder} placeholder can be used for a path relative to the first workspace folder. You can configure the SDK by accessing the [SDK Configuration](command:cangjie.sdk.manager.view)."
                     },
                     "CangjieSdkPath.CJVMBackend": {
                         "type": "string",
                         "default": "",
-                        "description": "(Linux Only)The absolute path to CJVM-sdk, e.g.: /path/to/CJVM/cangjie",
+                        "description": "(Linux Only) The absolute path to CJVM-sdk, e.g.: /path/to/CJVM/cangjie. The ${workspaceFolder} placeholder can be used for a path relative to the first workspace folder.",
                         "order": 2
                     },
                     "CangjieSdk.Option": {
