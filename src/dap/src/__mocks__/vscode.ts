@@ -18,7 +18,7 @@ import {
 } from '../constants';
 import {mockDapServer} from './mockDapServer';
 
-const mockSettingsMap = new Map();
+export const mockSettingsMap = new Map();
 mockSettingsMap.set(reverseDebugSettingsPrefix + enableReverseDebugSettingsName, true);
 mockSettingsMap.set(reverseDebugSettingsPrefix + threadNumberSettingsName, 1);
 mockSettingsMap.set(reverseDebugSettingsPrefix + stackTraceNumberSettingsName, 0);
@@ -29,6 +29,10 @@ mockSettingsMap.set('CangjieSdkPathllvmBackend', 'cangjie');
 mockSettingsMap.set('CangjieSdkPathcjvmBackend', 'cangjie');
 mockSettingsMap.set('CangjieSdkPathCJNativeBackend', 'cangjie');
 mockSettingsMap.set('CangjieSdkPathCJVMBackend', 'cangjie');
+
+export function setMockSetting(groupName: string, settingName: string, value: unknown): void {
+  mockSettingsMap.set(groupName + settingName, value);
+}
 
 export let responseData: any;
 

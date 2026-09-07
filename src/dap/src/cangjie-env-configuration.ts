@@ -11,6 +11,7 @@ import {checkIsValid} from './common-utils';
 import { workspace } from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
+import {expandWorkspacePlaceholders} from './sdk-path-utils';
 
 export const envPathName = {
   CANGJIE_HOME: 'CANGJIE_HOME',
@@ -199,6 +200,7 @@ export class CangjieEnvConfiguration {
   private generateSdkPath(): void {
     const backendTypeConfigName = backendTypeConfig.get(this.backendType);
     let sdkPath: string = <string>workspace.getConfiguration('CangjieSdkPath').get(backendTypeConfigName);
+    sdkPath = expandWorkspacePlaceholders(sdkPath, workspace.workspaceFolders?.[0]?.uri.fsPath);
     if (!sdkPath || !fs.existsSync(sdkPath)) {
       throw Error('The Cangjie SDK path has not been configured properly. Please configure it first.');
     }

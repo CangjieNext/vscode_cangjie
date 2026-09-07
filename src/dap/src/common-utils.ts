@@ -42,6 +42,7 @@ import type {CangjieDebugConfiguration} from './cangjie-debug-configuration';
 import {tomlParser, tomlStringify} from './command';
 import { exec } from 'child_process';
 import { CangjieDependencyBuilder } from './config/cangjie-dependency-builder';
+import {expandWorkspacePlaceholders} from './sdk-path-utils';
 
 let extensionPath: string;
 
@@ -957,6 +958,7 @@ export function getSdkPath(): string {
   let sdkOption = getSdkOption();
   let backendType = sdkOption === 'CJNative' ? 'CJNativeBackend' : 'CJVMBackend';
   let sdkPath: string = <string>workspace.getConfiguration('CangjieSdkPath').get(backendType);
+  sdkPath = expandWorkspacePlaceholders(sdkPath, workspace.workspaceFolders?.[0]?.uri.fsPath);
   if (!sdkPath || !fs.existsSync(sdkPath)) {
     throw Error('The Cangjie SDK path has not been configured properly. Please configure it first.');
   }
