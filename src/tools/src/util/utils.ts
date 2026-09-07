@@ -18,6 +18,7 @@ import type {CjpmBuildArgs, ModuleJson} from './cjpm-config-data';
 import type {CustomTomlTypes} from './toml/toml-types';
 import {parse} from './toml/toml-export';
 import { PickItemStruct } from '../buildProject/multi-step-select';
+import {expandWorkspacePlaceholders} from './sdk-path-utils';
 
 export class Utility {
   static isCreatedProject: boolean = false;
@@ -154,16 +155,16 @@ export class Utility {
   }
 
   static getCangjieHome(): string {
+    let backendType: string;
     if (this.isCreatedProject) {
-      if (this.outputType === 'cbc' || this.outputType === 'cbclib') {
-        return <string>workspace.getConfiguration('CangjieSdkPath').get('CJVMBackend');
-      }
-      return <string>workspace.getConfiguration('CangjieSdkPath').get('CJNativeBackend');
+      backendType = this.outputType === 'cbc' || this.outputType === 'cbclib'
+        ? 'CJVMBackend'
+        : 'CJNativeBackend';
+    } else {
+      backendType = this.getSdkOption() === 'CJNative' ? 'CJNativeBackend' : 'CJVMBackend';
     }
-    if (this.getSdkOption() === 'CJNative') {
-      return <string>workspace.getConfiguration('CangjieSdkPath').get('CJNativeBackend');
-    }
-    return <string>workspace.getConfiguration('CangjieSdkPath').get('CJVMBackend');
+    const sdkPath = <string>workspace.getConfiguration('CangjieSdkPath').get(backendType);
+    return expandWorkspacePlaceholders(sdkPath, workspace.workspaceFolders?.[0]?.uri.fsPath);
   }
 
   static async configTerminalcjpmEnv(): Promise<void> {

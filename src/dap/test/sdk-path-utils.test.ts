@@ -7,6 +7,7 @@
  */
 
 import * as path from 'path';
+import * as fs from 'fs';
 import {expandWorkspacePlaceholders as expandDap} from '../src/sdk-path-utils';
 import {expandWorkspacePlaceholders as expandLsp} from '../../lsp/src/utils/sdk-path-utils';
 import {expandWorkspacePlaceholders as expandTools} from '../../tools/src/util/sdk-path-utils';
@@ -43,4 +44,13 @@ describe.each<[string, Resolver]>([
   test('does not expand when no workspace is open', () => {
     expect(expand('${workspaceFolder}/sdk')).toBe('${workspaceFolder}/sdk');
   });
+});
+
+test.each([
+  'src/lsp/src/utils/utils.ts',
+  'src/tools/src/util/utils.ts',
+])('%s routes SDK settings through the resolver', sourcePath => {
+  const source = fs.readFileSync(path.resolve(__dirname, '../../..', sourcePath), 'utf8');
+  expect(source).toContain('expandWorkspacePlaceholders');
+  expect(source).toContain('workspace.workspaceFolders?.[0]?.uri.fsPath');
 });

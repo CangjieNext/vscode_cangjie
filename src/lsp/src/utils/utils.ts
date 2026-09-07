@@ -72,6 +72,7 @@ import * as os from 'os';
 import * as childProcess from 'child_process';
 import * as vscode from 'vscode';
 import { CommonSpecificUtility } from './common-specific-utils';
+import {expandWorkspacePlaceholders} from './sdk-path-utils';
 
 interface InitializationData {
   multiModuleOption: unknown;
@@ -457,11 +458,9 @@ export class Utility {
   }
 
   static getCangjieHome(): string {
-    if (this.getSdkOption() === 'CJNative') {
-      return <string>workspace.getConfiguration('CangjieSdkPath').get('CJNativeBackend');
-    } else {
-      return <string>workspace.getConfiguration('CangjieSdkPath').get('CJVMBackend');
-    }
+    const backendType = this.getSdkOption() === 'CJNative' ? 'CJNativeBackend' : 'CJVMBackend';
+    const sdkPath = <string>workspace.getConfiguration('CangjieSdkPath').get(backendType);
+    return expandWorkspacePlaceholders(sdkPath, workspace.workspaceFolders?.[0]?.uri.fsPath);
   }
 
   static getEnvPaths(): string[] {
