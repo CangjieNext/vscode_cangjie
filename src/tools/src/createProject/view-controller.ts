@@ -67,9 +67,11 @@ export class ViewController {
           return;
         case 'finishSetting':
           if (message.compileBackend === 'CJNative') {
-            curPathSdk = <string>vscode.workspace.getConfiguration('CangjieSdkPath').get('CJNativeBackend');
+            curPathSdk = <string>vscode.workspace.getConfiguration('CangjieSdkPath').get('CJNativeBackend') ||
+              process.env.CANGJIE_HOME;
           } else {
-            curPathSdk = <string>vscode.workspace.getConfiguration('CangjieSdkPath').get('CJVMBackend');
+            curPathSdk = <string>vscode.workspace.getConfiguration('CangjieSdkPath').get('CJVMBackend') ||
+              process.env.CANGJIE_HOME;
           }
           this.finishSetting(message, curPathSdk, CreateProjectUtils.panel);
           return;
