@@ -27,6 +27,8 @@
 3. 找到 `Cangjie Sdk Path: CJNative Backend` 选项，输入 CJNative 后端 SDK 文件夹所在绝对路径。
 4. 重启 VSCode 生效。
 
+如果当前后端的 SDK 路径配置为空，插件会使用环境变量 `CANGJIE_HOME` 作为 SDK 目录。显式配置的 SDK 路径优先于 `CANGJIE_HOME`。
+
 ## 使用
 
 ### 创建仓颉工程
