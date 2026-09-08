@@ -154,16 +154,19 @@ export class Utility {
   }
 
   static getCangjieHome(): string {
+    let configuredSdkPath: string;
     if (this.isCreatedProject) {
       if (this.outputType === 'cbc' || this.outputType === 'cbclib') {
-        return <string>workspace.getConfiguration('CangjieSdkPath').get('CJVMBackend');
+        configuredSdkPath = <string>workspace.getConfiguration('CangjieSdkPath').get('CJVMBackend');
+      } else {
+        configuredSdkPath = <string>workspace.getConfiguration('CangjieSdkPath').get('CJNativeBackend');
       }
-      return <string>workspace.getConfiguration('CangjieSdkPath').get('CJNativeBackend');
+    } else if (this.getSdkOption() === 'CJNative') {
+      configuredSdkPath = <string>workspace.getConfiguration('CangjieSdkPath').get('CJNativeBackend');
+    } else {
+      configuredSdkPath = <string>workspace.getConfiguration('CangjieSdkPath').get('CJVMBackend');
     }
-    if (this.getSdkOption() === 'CJNative') {
-      return <string>workspace.getConfiguration('CangjieSdkPath').get('CJNativeBackend');
-    }
-    return <string>workspace.getConfiguration('CangjieSdkPath').get('CJVMBackend');
+    return configuredSdkPath || process.env.CANGJIE_HOME;
   }
 
   static async configTerminalcjpmEnv(): Promise<void> {

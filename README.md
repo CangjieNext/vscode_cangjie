@@ -27,6 +27,8 @@ The current extension supports the Cangjie LTS release. If you use an STS releas
 3. Find **Cangjie Sdk Path: CJNative Backend** and enter the absolute path to the CJNative SDK directory.
 4. Restart VS Code for the configuration to take effect.
 
+If the SDK path for the selected backend is empty, the extension uses the `CANGJIE_HOME` environment variable as the SDK directory. An explicitly configured SDK path takes precedence over `CANGJIE_HOME`.
+
 ## Usage
 
 ### Create a Cangjie Project
