@@ -69,9 +69,11 @@ export class ProjectController implements Disposable {
     }
     let curPathSdk = pathSdk;
     if (choice.metadata.type === CompileBackendType.CJVM) {
-      curPathSdk = <string>vscode.workspace.getConfiguration('CangjieSdkPath').get('CJVMBackend');
+      curPathSdk = <string>vscode.workspace.getConfiguration('CangjieSdkPath').get('CJVMBackend') ||
+        process.env.CANGJIE_HOME;
     } else {
-      curPathSdk = <string>vscode.workspace.getConfiguration('CangjieSdkPath').get('CJNativeBackend');
+      curPathSdk = <string>vscode.workspace.getConfiguration('CangjieSdkPath').get('CJNativeBackend') ||
+        process.env.CANGJIE_HOME;
     }
     await chooseOutputType(choice.metadata.type, curPathSdk);
   }

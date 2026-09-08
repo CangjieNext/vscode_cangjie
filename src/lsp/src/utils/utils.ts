@@ -459,11 +459,13 @@ export class Utility {
   }
 
   static getCangjieHome(): string {
+    let configuredSdkPath: string;
     if (this.getSdkOption() === 'CJNative') {
-      return <string>workspace.getConfiguration('CangjieSdkPath').get('CJNativeBackend');
+      configuredSdkPath = <string>workspace.getConfiguration('CangjieSdkPath').get('CJNativeBackend');
     } else {
-      return <string>workspace.getConfiguration('CangjieSdkPath').get('CJVMBackend');
+      configuredSdkPath = <string>workspace.getConfiguration('CangjieSdkPath').get('CJVMBackend');
     }
+    return configuredSdkPath || process.env.CANGJIE_HOME;
   }
 
   static getEnvPaths(): string[] {
