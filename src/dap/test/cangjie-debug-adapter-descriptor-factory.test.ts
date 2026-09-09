@@ -50,6 +50,10 @@ describe('test CangjieDebugAdapterDescriptorFactory', () => {
     jest.clearAllMocks();
   });
 
+  afterEach(() => {
+    vscode.window.terminals.length = 0;
+  });
+
   test('test createDebugAdapterDescriptor', async () => {
     await mockActiveExtensions();
 
@@ -64,11 +68,32 @@ describe('test CangjieDebugAdapterDescriptorFactory', () => {
         const returnReq = !utils.isEmpty(responseData.request_seq) ? responseData.request_seq : responseData.seq;
         expect(request.seq).toBe(returnReq);
       }
-      factory.sessionTerminated();
+      await factory.sessionTerminated();
     } finally {
       if (!utils.isEmpty(CangjieSocketDebugAdapter.INSTANCE)) {
         CangjieSocketDebugAdapter.INSTANCE.dispose();
       }
     }
   }, 15000);
+
+  test('session termination closes only the debuggee terminal', async () => {
+    const userTerminal = {
+      name: 'cangjieDebug: main.exe',
+      processId: Promise.resolve(1001),
+      dispose: jest.fn(),
+    };
+    const debuggeeTerminal = {
+      name: 'cangjieDebug: main.exe',
+      processId: Promise.resolve(1002),
+      dispose: jest.fn(),
+    };
+    vscode.window.terminals.push(userTerminal, debuggeeTerminal);
+
+    const factory = new CangjieDebugAdapterDescriptorFactory();
+    (factory as any).debuggeeTerminalProcessId = 1002;
+    await factory.sessionTerminated();
+
+    expect(userTerminal.dispose).not.toHaveBeenCalled();
+    expect(debuggeeTerminal.dispose).toHaveBeenCalledTimes(1);
+  });
 });

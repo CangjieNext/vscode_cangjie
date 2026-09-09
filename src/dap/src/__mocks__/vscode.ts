@@ -38,6 +38,7 @@ export const extensions = {
 
 export const window = {
   createTerminal: jest.fn(),
+  terminals: [] as any[],
   showErrorMessage: jest.fn(),
   showInformationMessage: jest.fn(),
   showWarningMessage: jest.fn(),

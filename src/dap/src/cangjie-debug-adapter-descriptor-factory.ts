@@ -51,7 +51,7 @@ export class CangjieDebugAdapterDescriptorFactory implements vscode.DebugAdapter
   private cjvmExecution: TaskExecution = null;
   private currentWorkspacePath: string;
   private shellProcessId: number;
-  private debuggeeTerminalName: string;
+  private debuggeeTerminalProcessId: number;
 
   private readonly serverTerminateTimeMillis: number = 500;
 
@@ -64,7 +64,7 @@ export class CangjieDebugAdapterDescriptorFactory implements vscode.DebugAdapter
     return this.createDebugAdapterImplementation(session, executable);
   }
 
-  public sessionTerminated(): void {
+  public async sessionTerminated(): Promise<void> {
     CangjieReverseDebug.instance = null;
     if (this.currentServerExecution !== null) {
       vscode.commands.executeCommand('setContext', 'enableCangjieReverseDebug', false);
@@ -74,9 +74,19 @@ export class CangjieDebugAdapterDescriptorFactory implements vscode.DebugAdapter
       vscode.commands.executeCommand('setContext', 'enableCangjieReverseDebug', false);
       this.cjvmExecution.terminate();
     }
-    if (checkIsValid(this.debuggeeTerminalName)) {
-      vscode.window.terminals.find(t => t.name === this.debuggeeTerminalName)?.dispose();
-      this.debuggeeTerminalName = undefined;
+    if (checkIsValid(this.debuggeeTerminalProcessId)) {
+      const processId = this.debuggeeTerminalProcessId;
+      this.debuggeeTerminalProcessId = undefined;
+      await this.disposeTerminalByProcessId(processId);
+    }
+  }
+
+  private async disposeTerminalByProcessId(processId: number): Promise<void> {
+    for (const terminal of vscode.window.terminals) {
+      if ((await terminal.processId) === processId) {
+        terminal.dispose();
+        return;
+      }
     }
   }
 
@@ -309,17 +319,11 @@ export class CangjieDebugAdapterDescriptorFactory implements vscode.DebugAdapter
     debugAdapter.addMessageFilter('event', 'breakpoint', msg => {
       return null;
     });
-    // Close remaining terminal
-    debugAdapter.addMessageListener('request', 'runInTerminal', msg => {
-      const request = <DebugProtocol.RunInTerminalRequest>msg;
-      vscode.window.terminals.find(t => t.name === request.arguments.title)?.dispose();
-      this.debuggeeTerminalName = request.arguments.title;
-      return request;
-    });
     // get pid of the shell that started the debuggee
     debugAdapter.addMessageFilter('response', 'runInTerminal', msg => {
       const response = <DebugProtocol.RunInTerminalResponse>msg;
       this.shellProcessId = response.body.shellProcessId;
+      this.debuggeeTerminalProcessId = response.body.shellProcessId;
       return response;
     });
     // support debug in console.
