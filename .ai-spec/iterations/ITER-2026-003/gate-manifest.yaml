@@ -1,0 +1,49 @@
+﻿G1:
+  status: passed
+  checks:
+    requirements:
+      artifacts: [01-requirements/clarification.md, 01-requirements/user-stories.md, 01-requirements/nfr.md, 01-requirements/scope.md, 01-requirements/glossary.md]
+    black_box_tests:
+      artifact: 05-testing/test-plan.md
+G2:
+  status: passed
+  checks:
+    design:
+      artifacts: [02-design/delta-brief.md, 02-design/hld.md, 02-design/lld.md, 02-design/adr/0001-contextual-modal-highlighting.md, 02-design/nfr-design.md, 02-design/review-log.md]
+G3:
+  status: passed
+  checks:
+    plan:
+      artifacts: [03-plan/wbs.md, 03-plan/milestones.md, 03-plan/risks.md, 03-plan/dod.md, 03-plan/approval.md]
+G4:
+  status: pending
+  checks:
+    grammar_tests:
+      command: node --test test/grammar-modal-highlighting.test.js test/grammar-modal-tokenizer.test.js
+      exit_code: 0
+      log: evidence/G4-grammar.log
+      artifact_hash: 9F552B42369708C9C482E4430B0F52B128EB73B0D9EE7896E0165ED7FEC7F1CA
+    json_validation:
+      command: node -e "JSON.parse(package.json); JSON.parse(syntaxes/Cangjie.tmLanguage.json)"
+      exit_code: 0
+      log: evidence/G4-json.log
+      artifact_hash: 7491424A4485F3CB7C164EC0A9C0FAFC41F4E141937FD8946E8E55F6A8C3CC31
+    lint:
+      command: npm run lint
+      exit_code: 0
+      log: evidence/G4-lint.log
+      artifact_hash: 8827E954756697CEA2C563E92616EE5B98A2133AB4EA17C06C50305335ADEE30
+    compile:
+      command: npm run compile
+      exit_code: 1
+      log: evidence/G4-compile.log
+      blocker: ENV-001
+      artifact_hash: E703A53F87F1E0ED7ABE50087054E4DC8940B70177499052B7317C1FA8AF6174
+G5:
+  status: pending
+  checks:
+    reason: G4 compile blocker prevents result-verification gate.
+G6:
+  status: pending
+  checks:
+    reason: G4 and G5 are not complete; no release packaging performed.

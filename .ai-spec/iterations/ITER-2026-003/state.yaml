@@ -1,0 +1,18 @@
+﻿run_id: ITER-2026-003
+mode: feature
+classification: New user-visible syntax highlighting capability; feature mode.
+risk: M
+current_stage: testing
+gates:
+  G1: {status: passed, evidence: gate-manifest.yaml#G1}
+  G2: {status: passed, evidence: gate-manifest.yaml#G2}
+  G3: {status: passed, evidence: gate-manifest.yaml#G3}
+  G4: {status: pending, evidence: gate-manifest.yaml#G4}
+  G5: {status: pending, evidence: gate-manifest.yaml#G5}
+  G6: {status: pending, evidence: gate-manifest.yaml#G6}
+pending_human_review: []
+assumptions:
+  - "TextMate grammar is the plugin-side implementation surface requested in this iteration."
+  - "`local` remains a soft keyword and `unique`/`immutable` are out of scope."
+  - "Root compile remains blocked by the pre-existing `@types/webpack`/`tapable` dependency mismatch recorded as ENV-001."
+last_updated: 2026-09-10T10:00:00+08:00

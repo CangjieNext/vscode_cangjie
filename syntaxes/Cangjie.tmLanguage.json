@@ -17,11 +17,15 @@
 		}, {
 			"include" : "#comments"
 		}, {
+			"include" : "#class-body"
+		}, {
 			"include" : "#code"
 		}, {
 			"include" : "#module"
 		}, {
 			"include" : "#forStruct"
+		}, {
+			"include" : "#modal"
 		}, {
 			"include" : "#at"
 		}, {
@@ -39,6 +43,98 @@
 		}
 	],
 	"repository" : {
+		"modal" : {
+			"patterns" : [{
+                    "begin" : "(@)(?=\\s*$)",
+                    "end" : "(?<=[!?])|(?=\\S)(?!(?:~|[\\p{XID_Start}][\\p{XID_Continue}]*\\b|[!?]))",
+                    "beginCaptures" : {
+                        "1" : {
+                            "name" : "keyword.control.Cangjie"
+                        }
+                    },
+                    "patterns" : [{
+                            "match" : "(?:~\\s*[\\p{XID_Start}][\\p{XID_Continue}]*\\b\\s*[!?]|[\\p{XID_Start}][\\p{XID_Continue}]*\\b\\s*[!?])(?=[\\p{XID_Continue}!?])"
+                        }, {
+                            "match" : "\\s+"
+                        }, {
+                            "match" : "~",
+                            "name" : "keyword.control.Cangjie"
+                        }, {
+                            "match" : "[\\p{XID_Start}][\\p{XID_Continue}]*\\b",
+                            "name" : "keyword.control.Cangjie"
+                        }, {
+                            "match" : "[!?]",
+                            "name" : "keyword.control.Cangjie"
+                        }]
+                }, {
+					"match" : "(@)(\\s*)(?:(~)(\\s*)([\\p{XID_Start}][\\p{XID_Continue}]*)\\b(?![!?])|([\\p{XID_Start}][\\p{XID_Continue}]*)\\b(\\s*)([!?])(?![\\p{XID_Continue}!?]))",
+					"captures" : {
+						"1" : {
+							"name" : "keyword.control.Cangjie"
+						},
+						"3" : {
+							"name" : "keyword.control.Cangjie"
+						},
+						"5" : {
+							"name" : "keyword.control.Cangjie"
+						},
+						"6" : {
+							"name" : "keyword.control.Cangjie"
+						},
+						"8" : {
+							"name" : "keyword.control.Cangjie"
+						}
+					}
+				}
+			]
+		},
+		"class-body" : {
+			"begin" : "(\\b(?:class|interface|struct|enum|extend)\\b)(\\s+)([\\p{XID_Start}][\\p{XID_Continue}]*)[^{}]*\\{",
+			"end" : "\\}",
+			"beginCaptures" : {
+				"1" : {
+					"name" : "keyword.control.Cangjie"
+				},
+				"3" : {
+					"name" : "support.class.Cangjie"
+				}
+			},
+			"patterns" : [{
+					"include" : "#comments"
+				}, {
+					"include" : "#strings"
+				}, {
+					"include" : "#originStrings"
+				}, {
+					"include" : "#demode"
+				}, {
+					"include" : "#keywords"
+				}, {
+					"include" : "#modal"
+				}, {
+					"include" : "#class-body"
+				}, {
+					"include" : "#function"
+				}, {
+					"include" : "#qualified-type"
+				}, {
+					"include" : "#type"
+				}, {
+					"include" : "#constants"
+				}, {
+					"include" : "#variable"
+				}, {
+					"include" : "#block"
+				}
+			]
+		},
+		"demode" : {
+			"patterns" : [{
+					"name" : "keyword.control.Cangjie",
+					"match" : "\\bdemode\\b(?=\\s+(?:let|var)\\b)"
+				}
+			]
+		},
 		"at" : {
 			"patterns" : [{
 					"name" : "keyword.control.Cangjie",
@@ -72,6 +168,8 @@
 					"patterns" : [{
 							"include" : "#keywords"
 						}, {
+							"include" : "#modal"
+						}, {
 							"include" : "#memberAccess"
 						}, {
 							"include" : "#classlike-declaration"
@@ -101,6 +199,8 @@
 					"patterns" : [{
 							"include" : "#keywords"
 						}, {
+							"include" : "#modal"
+						}, {
 							"include": "#strings"
 						},  {
 							"match" : "[\\p{XID_Start}][\\p{XID_Continue}]*\\s*(?=[\\)|\\||\\&|\\n|;])",
@@ -123,6 +223,8 @@
 					"end" : "(?=[^*\\<,\\|\\w\\s]|\\R|\\n)",
 					"patterns" : [{
 						"include": "#mark"
+						}, {
+						"include" : "#modal"
 						}, {
 							"include" : "#keywords"
 						}, {
@@ -357,9 +459,11 @@
 			]
 		},
 		"code" : {
-			"patterns" : [{
-					"include" : "#keywords"
-				}, {
+					"patterns" : [{
+						"include" : "#keywords"
+						}, {
+						"include" : "#modal"
+						}, {
 					"include" : "#constants"
 				}, {
 					"include" : "#strings"
@@ -376,6 +480,9 @@
 			"patterns" : [{
 					"name" : "keyword.control.Cangjie",
 					"match" : "\\b(VArray|const|differentiable|grad|vjp|valWithGrad|adjoint|adjointOf|when|except|include|primal|stage|main|false|IntNative|mut|Nothing|prop|redef|true|UIntNative|unsafe|Int8|Int16|Int32|Int64|UInt8|UInt16|UInt32|UInt64|Float16|Float32|Float64|Rune|Bool|Unit|struct|enum|This|package|import|class|interface|extend|func|let|var|sealed|type|init|this|super|if|else|case|try|catch|finally|for|do|while|throw|return|continue|break|is|as|in|match|where|spawn|synchronized|macro|quote|static|public|internal|private|protected|internal|external|override|abstract|open|operator|foreign|inout|common|specific)\\b"
+				}, {
+					"name" : "keyword.control.Cangjie",
+					"match" : "\\bexclave\\b"
 				}, {
 					"name" : "keyword.control.Cangjie",
 					"match" : "(\\;|!in)"
@@ -513,6 +620,8 @@
 						}, {
 							"include" : "#keywords"
 						}, {
+							"include" : "#modal"
+						}, {
 							"include" : "#function"
 						}, {
 							"include" : "#variable"
@@ -557,11 +666,15 @@
 			"end" : "\\}",
 			"patterns" : [{
 					"include" : "#comments"
-				}, {
+					}, {
 					"include" : "#strings"
-				}, {
+					}, {
 					"include" : "#keywords"
-				}, {
+					}, {
+					"include" : "#modal"
+					}, {
+					"include" : "#class-body"
+					}, {
 					"include" : "#function"
 				}, {
 					"include" : "#variable"
