@@ -22,7 +22,8 @@ function registerCjpmTomlModifyWatcher(context: vscode.ExtensionContext, cangjie
   if (!vscode.workspace.workspaceFolders?.[0] || Utility.getIsSingleFileMode()) {
     return;
   }
-  const multiCjpmWatcher = vscode.workspace.createFileSystemWatcher(new vscode.RelativePattern(vscode.workspace.workspaceFolders?.[0], '**/cjpm.toml'));
+  // 监听所有 workspace folder 下的 cjpm.toml（单工作区多文件夹支持）
+  const multiCjpmWatcher = vscode.workspace.createFileSystemWatcher('**/cjpm.toml');
   context.subscriptions.push(
     multiCjpmWatcher.onDidChange(async (e) => {
       const allKeysUri = Utility.getAllKeys();
@@ -68,7 +69,8 @@ function registerCjpmLockCreateWatcher(context: vscode.ExtensionContext, cangjie
   if (!vscode.workspace.workspaceFolders?.[0] || Utility.getIsSingleFileMode()) {
     return;
   }
-  const moduleLockCreateWatcher = vscode.workspace.createFileSystemWatcher(new vscode.RelativePattern(vscode.workspace.workspaceFolders?.[0], '**/cjpm.lock'));
+  // 监听所有 workspace folder 下的 cjpm.lock（单工作区多文件夹支持）
+  const moduleLockCreateWatcher = vscode.workspace.createFileSystemWatcher('**/cjpm.lock');
   context.subscriptions.push(
     moduleLockCreateWatcher.onDidCreate(async (e) => {
       if (!cangjieContext.getLspState()) {
@@ -78,7 +80,7 @@ function registerCjpmLockCreateWatcher(context: vscode.ExtensionContext, cangjie
     }),
   );
 
-  const moduleLockChangeWatcher = vscode.workspace.createFileSystemWatcher(new vscode.RelativePattern(vscode.workspace.workspaceFolders?.[0], '**/cjpm.lock'));
+  const moduleLockChangeWatcher = vscode.workspace.createFileSystemWatcher('**/cjpm.lock');
   context.subscriptions.push(
     moduleLockChangeWatcher.onDidChange(async (e) => {
       if (!cangjieContext.getLspState()) {
@@ -101,6 +103,18 @@ function registerRestartLspServer(context: vscode.ExtensionContext, cangjieConte
         const initializationOptions = await Utility.getInitializationOptions();
         cangjieContext.activate(context.globalStoragePath, outputChannel, context.workspaceState, context, initializationOptions);
       }
+    }),
+  );
+}
+
+function registerWorkspaceFolderChangeWatcher(context: vscode.ExtensionContext, cangjieContext: ChangjieContext, outputChannel: OutputChannel): void {
+  // 单工作区多文件夹支持：工作区文件夹增删后重启 LSP Server，使每个仓颉工程都能获得语言服务
+  context.subscriptions.push(
+    vscode.workspace.onDidChangeWorkspaceFolders(async () => {
+      if (Utility.getIsSingleFileMode()) {
+        return;
+      }
+      await clearAndClangdActivate(cangjieContext, context, outputChannel);
     }),
   );
 }
@@ -257,6 +271,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   await activateClangd(cangjieContext, context, outputChannel);
   registerCjpmTomlModifyWatcher(context, cangjieContext, outputChannel);
   registerCjpmLockCreateWatcher(context, cangjieContext, outputChannel);
+  // restart lsp server when workspace folders changed (multi-folder support)
+  registerWorkspaceFolderChangeWatcher(context, cangjieContext, outputChannel);
 
   // run lsp server when server stop
   registerRestartLspServer(context, cangjieContext, outputChannel);
