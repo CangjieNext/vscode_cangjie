@@ -175,13 +175,71 @@ export class Utility {
     }
     // Reset single file mode flag (when there is a workspace)
     Utility.isSingleFileMode = false;
-    for (const pathSuffix of this.pathsToCheck) {
-      const tomlPath = path.join(workspace.workspaceFolders[0].uri.fsPath, pathSuffix);
-      if (fs.existsSync(path.join(tomlPath, CJPM_TOML))) {
-        return tomlPath;
+    // 多文件夹支持：优先返回所有 workspace folder 中第一个仓颉工程目录，找不到工程时回退到第一个文件夹
+    for (const folder of workspace.workspaceFolders) {
+      const projectRoot = Utility.findCjProjectRoot(folder.uri.fsPath);
+      if (Utility.checkIsValid(projectRoot)) {
+        return projectRoot;
       }
     }
     return workspace.workspaceFolders[0].uri.fsPath;
+  }
+
+  /**
+   * 在给定目录下探测仓颉工程根目录（cjpm.toml 所在目录）。
+   * 支持三种工程结构：常规工程（根目录）、元服务工程（entry/src/main/cangjie）、多平台工程（lib）。
+   * @param basePath 待探测的目录
+   * @returns 工程根目录；未找到时返回空字符串
+   */
+  static findCjProjectRoot(basePath: string): string {
+    for (const pathSuffix of this.pathsToCheck) {
+      const candidatePath = pathSuffix === '' ? basePath : path.join(basePath, pathSuffix);
+      if (fs.existsSync(path.join(candidatePath, CJPM_TOML))) {
+        return candidatePath;
+      }
+    }
+    return '';
+  }
+
+  /**
+   * 收集当前工作区所有文件夹中的仓颉工程根目录（单工作区多文件夹支持）。
+   * 第一个文件夹兼容 Cangjie.Root.Cjpm.Path 自定义工程根配置。
+   * @returns 所有仓颉工程根目录；没有工程时返回空数组
+   */
+  static getAllCjProjectRoots(): string[] {
+    const roots: string[] = [];
+    const folders = workspace.workspaceFolders;
+    if (!Utility.checkIsValid(folders) || folders.length === 0) {
+      return roots;
+    }
+    for (let index = 0; index < folders.length; index++) {
+      let folderPath = folders[index].uri.fsPath;
+      if (index === 0) {
+        const customRoot = Utility.getCjRootProjectPath();
+        if (Utility.checkIsValid(customRoot)) {
+          folderPath = customRoot;
+        }
+      }
+      const projectRoot = Utility.findCjProjectRoot(folderPath);
+      if (Utility.checkIsValid(projectRoot)) {
+        roots.push(projectRoot);
+      }
+    }
+    return roots;
+  }
+
+  /**
+   * 根据工程根目录判断工程类型：general（元服务）、multi-platform（多平台）、origin（常规）。
+   */
+  static detectProjectType(projectRoot: string): string {
+    const normalizedRoot = path.normalize(projectRoot);
+    if (normalizedRoot.endsWith(path.normalize(GENERAL_PATH))) {
+      return 'general';
+    }
+    if (normalizedRoot.endsWith(path.normalize(MULTI_PLATFORM_PATH))) {
+      return 'multi-platform';
+    }
+    return 'origin';
   }
 
   static getWorkspaceRoot(): string {
@@ -522,23 +580,14 @@ export class Utility {
   }
 
   static async getInitializationOptions(): Promise<unknown> {
-    if (!Utility.checkIsValid(workspace.workspaceFolders)) {
+    if (!Utility.checkIsValid(workspace.workspaceFolders) || workspace.workspaceFolders.length === 0) {
       return this.getSingleFileInitializationOptions();
     }
-    let cjProjectPath = Utility.getCjRootProjectPath();
-    for (const pathSuffix of this.pathsToCheck) {
-      const fullPath = path.join(cjProjectPath, pathSuffix, CJPM_TOML);
-      if (fs.existsSync(fullPath)) {
-        cjProjectPath = path.join(cjProjectPath, pathSuffix);
-        if (pathSuffix === GENERAL_PATH) {
-          this.projectType = 'general';
-        } else if (pathSuffix === MULTI_PLATFORM_PATH) {
-          this.projectType = 'multi-platform';
-        } else  {
-          this.projectType = 'origin';
-        }
-        break;
-      }
+    // 单工作区多文件夹支持：收集所有 workspace folder 中的仓颉工程，逐个解析模块信息后合并到 multiModuleOption
+    const cjProjectRoots = Utility.getAllCjProjectRoots();
+    if (cjProjectRoots.length === 0) {
+      // 没有找到任何仓颉工程时，退回单工程解析（保持原有行为）
+      cjProjectRoots.push(Utility.getCjRootProjectPath());
     }
     const buildArgsJson: JSON = Utility.getCjpmBuildArgsContent();
     if (Utility.checkIsValid(buildArgsJson) && Object.prototype.hasOwnProperty.call(buildArgsJson, FEATURES)) {
@@ -546,14 +595,20 @@ export class Utility {
       this.baseTargetFeatures = features.split(',').map(item => item.trim()).filter(item => item !== '');
     }
     await this.setCentralRepoPath();
-    await this.getCjpmLockVersion(cjProjectPath);
-    await this.getMultiModuleOption(cjProjectPath);
+    for (const projectRoot of cjProjectRoots) {
+      this.projectType = Utility.detectProjectType(projectRoot);
+      await this.getCjpmLockVersion(projectRoot);
+      await this.getMultiModuleOption(projectRoot);
+    }
     await this.initTargetLib();
     this.getConditionCompileOption();
     return this.allInitializationOptions;
   }
 
   static getCjRootProjectPath(): string {
+    if (!Utility.checkIsValid(workspace.workspaceFolders) || workspace.workspaceFolders.length === 0) {
+      return undefined;
+    }
     let customPath = <string>workspace.getConfiguration('Cangjie.Root.Cjpm').get('Path');
     if (!Utility.checkIsValid(customPath)) {
       return workspace.workspaceFolders[0].uri.fsPath;
