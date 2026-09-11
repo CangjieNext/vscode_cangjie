@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (c) Huawei Technologies Co., Ltd. 2026. All rights reserved.
  * This source file is part of the Cangjie project, licensed under Apache-2.0
  * with Runtime Library Exception.
@@ -42,25 +42,20 @@ export class TerminalUtils {
    * @returns Promise<CommandResult> command result
    */
   public static executeCommand(command: string, cwd?: string): Promise<CommandResult> {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
       exec(TerminalUtils.getExecCmd(command), { cwd: cwd, encoding: 'utf8'}, (err, stdout, stderr) => {
+        if (checkIsValid(stderr)) {
+          TerminalUtils.appendLine(stderr, true);
+        }
+        if (checkIsValid(stdout)) {
+          TerminalUtils.appendLine(stdout);
+        }
         if (checkIsValid(err)) {
           TerminalUtils.appendLine(err?.stack, true);
           resolve({success: false, msg: err.message});
+          return;
         }
-        if (checkIsValid(stderr) && checkIsValid(stdout)) {
-          TerminalUtils.appendLine(stderr, true);
-          TerminalUtils.appendLine(stdout);
-          resolve({success: true, msg: stdout});
-        }
-        if (checkIsValid(stderr) && checkIsValid(err)) {
-          TerminalUtils.appendLine(stderr, true);
-          resolve({success: false, msg: stderr});
-        }
-        if (!checkIsValid(stderr) && checkIsValid(stdout)) {
-          TerminalUtils.appendLine(stdout);
-          resolve({success: true, msg: stdout});
-        }
+        resolve({success: true, msg: stdout ?? ''});
       });
     });
   }
