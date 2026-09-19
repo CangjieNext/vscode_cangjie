@@ -511,7 +511,11 @@ export function changeToEscapeCharacter(str: string): string {
   result = result.replace(/\\/g, '\\\\');
   result = result.replace(/\n/g, '\\n');
   result = result.replace(/\t/g, '\\t');
-  result = result.replace(/\o/g, '\\o');
+  // Note: the plain letter 'o' must not be escaped. A previous revision had a
+  // `result.replace(/\o/g, '\\o')` line here, but `\o` is not a valid regex escape
+  // so the backslash is silently dropped and the pattern is equivalent to /o/,
+  // which rewrote every 'o' in the value (e.g. 'hello' -> 'hell\\o'). It has been
+  // removed; the remaining replacements below are all valid escapes.
   result = result.replace(/\r/g, '\\r');
   result = result.replace(/\v/g, '\\v');
   result = result.replace(/[\b]/g, '\\b');
