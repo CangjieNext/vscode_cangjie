@@ -525,7 +525,15 @@ export class Utility {
     if (!Utility.checkIsValid(workspace.workspaceFolders)) {
       return this.getSingleFileInitializationOptions();
     }
-    let cjProjectPath = Utility.getCjRootProjectPath();
+    return this.buildInitializationOptions(Utility.getCjRootProjectPath(), workspace.workspaceFolders[0].uri.fsPath);
+  }
+
+  /**
+   * 按指定工程根构建 initializationOptions（多文件夹工作区支持）。
+   * 会重建 Utility 的静态模块状态（multiModuleOption/targetLib 等），
+   * 调用方在切换工程前应先调用 clearMultiModuleOption + clearConditionOption。
+   */
+  static async buildInitializationOptions(cjProjectPath: string, folderRoot: string): Promise<unknown> {
     for (const pathSuffix of this.pathsToCheck) {
       const fullPath = path.join(cjProjectPath, pathSuffix, CJPM_TOML);
       if (fs.existsSync(fullPath)) {
@@ -540,7 +548,7 @@ export class Utility {
         break;
       }
     }
-    const buildArgsJson: JSON = Utility.getCjpmBuildArgsContent();
+    const buildArgsJson: JSON = Utility.getCjpmBuildArgsContent(folderRoot);
     if (Utility.checkIsValid(buildArgsJson) && Object.prototype.hasOwnProperty.call(buildArgsJson, FEATURES)) {
       const features = buildArgsJson[FEATURES];
       this.baseTargetFeatures = features.split(',').map(item => item.trim()).filter(item => item !== '');
@@ -548,7 +556,7 @@ export class Utility {
     await this.setCentralRepoPath();
     await this.getCjpmLockVersion(cjProjectPath);
     await this.getMultiModuleOption(cjProjectPath);
-    await this.initTargetLib();
+    await this.initTargetLibFor(cjProjectPath);
     this.getConditionCompileOption();
     return this.allInitializationOptions;
   }
@@ -1249,6 +1257,47 @@ export class Utility {
     return path.resolve(workspacePathUri, targetDir.replace(/\s+$/, ''));
   }
 
+  /**
+   * 多文件夹工作区：按指定工程根计算 targetDir（不依赖 workspaceFolders[0]）。
+   * 与 getTargetDir 同构，仅将工程根从全局单例改为显式参数。
+   */
+  static async getTargetDirFor(cjProjectPath: string): Promise<string> {
+    const workspacePathUri = cjProjectPath;
+    let tomlPath = path.join(workspacePathUri, CJPM_TOML);
+    const cjpmContent = await Utility.getTomlObj(tomlPath);
+    let defaultTargetDir = path.join(workspacePathUri, TARGET);
+    if (!Utility.checkIsValid(cjpmContent) || Object.keys(cjpmContent).length <= 0) {
+      return defaultTargetDir;
+    }
+    let isWorkSpace = false;
+    if (Object.prototype.hasOwnProperty.call(cjpmContent, WORKSPACE)) {
+      isWorkSpace = true;
+    }
+    if (isWorkSpace) {
+      const ws = cjpmContent[WORKSPACE];
+      if (!Object.prototype.hasOwnProperty.call(ws, TARGET_DIR)) {
+        return defaultTargetDir;
+      }
+      const targetDir = ws[TARGET_DIR];
+      if (!Utility.checkIsValid(targetDir)) {
+        return defaultTargetDir;
+      }
+      return path.resolve(workspacePathUri, targetDir.replace(/\s+$/, ''));
+    }
+    if (!Object.prototype.hasOwnProperty.call(cjpmContent, PACKAGE)) {
+      return defaultTargetDir;
+    }
+    const packageConfig = cjpmContent[PACKAGE];
+    if (!Object.prototype.hasOwnProperty.call(packageConfig, TARGET_DIR)) {
+      return defaultTargetDir;
+    }
+    const targetDir = packageConfig[TARGET_DIR];
+    if (!Utility.checkIsValid(targetDir)) {
+      return defaultTargetDir;
+    }
+    return path.resolve(workspacePathUri, targetDir.replace(/\s+$/, ''));
+  }
+
   static async getFilesEnvPath(): Promise<string> {
     const targetDir = await Utility.getTargetDir();
     let buildPath = path.join(targetDir, 'release');
@@ -1274,6 +1323,23 @@ export class Utility {
       this.targetLib = buildPath;
     } else {
       this.targetLib = path.join(this.getWorkspaceFolders(), '.cache', 'lsp');
+    }
+  }
+
+  /**
+   * 多文件夹工作区：按指定工程根计算 targetLib（不依赖 workspaceFolders[0]）。
+   * 与 initTargetLib 同构，仅将工程根从全局单例改为显式参数。
+   */
+  static async initTargetLibFor(cjProjectPath: string): Promise<void> {
+    if (process.platform === 'linux' || process.platform === 'darwin') {
+      const targetDir = await Utility.getTargetDirFor(cjProjectPath);
+      let buildPath = path.join(targetDir, 'release');
+      if (fs.existsSync(buildPath) === false) {
+        buildPath = path.join(targetDir, 'debug');
+      }
+      this.targetLib = buildPath;
+    } else {
+      this.targetLib = path.join(cjProjectPath, '.cache', 'lsp');
     }
   }
 
@@ -1480,8 +1546,8 @@ export class Utility {
     return moduleName;
   }
 
-  static getCjpmBuildArgsContent(): JSON {
-    const workspaceRoot = Utility.getWorkspaceRoot();
+  static getCjpmBuildArgsContent(folderRoot?: string): JSON {
+    const workspaceRoot = folderRoot ?? Utility.getWorkspaceRoot();
     if (!workspaceRoot) {
       return {} as JSON;
     }
