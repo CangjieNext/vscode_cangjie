@@ -127,13 +127,23 @@ let crossDefinitionCangjie2C = async function (
   }
 };
 
+/**
+ * 按文档路由到归属语言服务客户端（多文件夹工作区支持）。
+ * middleware 本身是 per-client 的（next 已走对客户端），但 definition 的
+ * 直接 sendRequest 路径历史上硬编码单例，这里改为显式路由兜底。
+ */
+function clientForDocument(document: TextDocument) {
+  return cangjieContextInstance.getClientForDocument(document) ?? cangjieContextInstance.client;
+}
+
 function cangjieDefinition(
   document: TextDocument,
   position: VPosition,
   token: CancellationToken,
 ): Promise<vscode.Definition | vscode.DefinitionLink[] | undefined | null> {
-  return cangjieContextInstance.client
-    ?.sendRequest(DefinitionRequestEnhance.type, cangjieContextInstance.client?.code2ProtocolConverter.asTextDocumentPositionParams(document, position), token)
+  const target = clientForDocument(document);
+  return target
+    ?.sendRequest(DefinitionRequestEnhance.type, target?.code2ProtocolConverter.asTextDocumentPositionParams(document, position), token)
     .then(
       async (result) => {
         if (token.isCancellationRequested) {
@@ -147,10 +157,10 @@ function cangjieDefinition(
             // Other Cross-Language Solutions
           }
         }
-        return cangjieContextInstance.client?.protocol2CodeConverter.asDefinitionResult(result as vscodelc.Definition | vscodelc.LocationLink[] | null, token);
+        return target?.protocol2CodeConverter.asDefinitionResult(result as vscodelc.Definition | vscodelc.LocationLink[] | null, token);
       },
       (error) => {
-        return cangjieContextInstance.client?.handleFailedRequest(DefinitionRequestEnhance.type, token, error, null);
+        return target?.handleFailedRequest(DefinitionRequestEnhance.type, token, error, null);
       },
     );
 }

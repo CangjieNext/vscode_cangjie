@@ -17,6 +17,15 @@ export function activate(context: ChangjieContext): void {
   context.client?.registerFeature(feature);
 }
 
+/**
+ * 多文件夹工作区：为单个语言服务客户端注册 breakpoints feature。
+ * 命令只注册一次（BreakpointsFeature 构造时），breakpoint 请求按文档路由到归属客户端。
+ */
+export function activateForClient(client: vscodelc.LanguageClient, context: ChangjieContext): void {
+  const feature = new BreakpointsFeature(context);
+  client.registerFeature(feature);
+}
+
 export interface Breakpoints {
   breakpointLocation: vscode.Location[];
 }

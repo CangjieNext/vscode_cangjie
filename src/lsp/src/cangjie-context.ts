@@ -24,6 +24,13 @@ import * as checkhealthy from './check-healthy';
 import * as fs from 'fs';
 import { MAX_RESTART_COUNT, State, delay100, delay500 } from './utils/constantNums';
 import * as serverStatus from './server-status';
+import {
+  CangjieProject,
+  discoverWorkspaceProjects,
+  getCachedProjects,
+  onProjectsChanged,
+  routeProject,
+} from './utils/project-discovery';
 
 export const cangjieDocumentSelector = [
   { scheme: 'file', language: 'c' },
@@ -160,8 +167,43 @@ export class ChangjieContext implements vscode.Disposable {
   // 用于 semanticTokens 请求防抖的定时器
   private semanticTokensDebounceTimer: ReturnType<typeof setTimeout> | null = null;
 
+  /** 多文件夹工作区：每个仓颉工程一个语言服务客户端（key = 工程根目录绝对路径） */
+  private clients = new Map<string, CangjieLanguageClient>();
+  /** 当前工作区发现到的仓颉工程列表 */
+  private projects: CangjieProject[] = [];
+
   get visibleClangdEditors(): vscode.TextEditor[] {
     return vscode.window.visibleTextEditors.filter((e) => isClangdDocument(e.document));
+  }
+
+  /** 是否处于多工程模式（≥2 个仓颉工程） */
+  get isMultiProject(): boolean {
+    return this.clients.size >= 2;
+  }
+
+  /**
+   * 文档 -> 语言服务客户端 路由（最长前缀优先，嵌套工程取最内层）。
+   * 单客户端/单文件模式直接返回该客户端；无命中返回 null。
+   */
+  getClientForDocument(document: vscode.TextDocument): CangjieLanguageClient | null {
+    if (this.clients.size === 0) {
+      return this.client;
+    }
+    const proj = routeProject(document.uri.fsPath, this.projects);
+    if (!proj) {
+      return this.client ?? (this.clients.values().next().value ?? null);
+    }
+    return this.clients.get(proj.root) ?? null;
+  }
+
+  /** 当前所有运行中的客户端（状态栏/调试聚合用） */
+  getAllClients(): CangjieLanguageClient[] {
+    return Array.from(this.clients.values());
+  }
+
+  /** 工程列表（状态提示用） */
+  getProjects(): CangjieProject[] {
+    return this.projects;
   }
 
   public static getDefaultServerPath(): string {
@@ -248,6 +290,27 @@ export class ChangjieContext implements vscode.Disposable {
       outputChannel.appendLine('Cannot determine workspace folder for LSP server. Please open a Cangjie file or workspace.');
       return;
     }
+
+    // ---- 多文件夹工作区：发现全部仓颉工程，逐工程启动独立语言服务 ----
+    const discovered = discoverWorkspaceProjects();
+    if (discovered.length > 1) {
+      outputChannel.appendLine(`[multi-folder] discovered ${discovered.length} Cangjie projects: ${discovered.map((p) => path.basename(p.root)).join(', ')}`);
+      this.projects = discovered;
+      await this.startMultiProjectClients(cangjieServerPath, lspArgs, context, outputChannel);
+      // 工作区文件夹增删后重新发现（工程增删是低频操作，直接全量重启）
+      this.subscriptions.push(
+        onProjectsChanged((projects) => {
+          if (JSON.stringify(projects.map((p) => p.root)) !== JSON.stringify(this.projects.map((p) => p.root))) {
+            outputChannel.appendLine('[multi-folder] workspace folders changed, re-discovering projects...');
+            void vscode.commands.executeCommand('cangjie.lsp.reLaunch');
+          }
+        }),
+      );
+      return;
+    }
+
+    // ---- 单工程 / 单文件：保持原单客户端行为 ----
+    this.projects = discovered;
 
     const clangd: vscodelc.Executable = {
       command: cangjieServerPath,
@@ -342,15 +405,161 @@ export class ChangjieContext implements vscode.Disposable {
     }
   }
 
+  /**
+   * 多文件夹工作区：为每个仓颉工程创建独立语言服务客户端。
+   * 路由隔离依赖：
+   *  - documentSelector 的 GlobPattern 限定到该工程目录（含 workspace members），
+   *    vscode-languageclient 的 isMatchedDocument 据此把 didOpen/didChange 只发给归属客户端；
+   *  - server 进程 cwd = 工程根目录，LSPServer 按 cwd 定位 cjpm.toml（与原单工程行为一致）；
+   *  - middleware 内显式 getClientForDocument 兜底（覆盖 definition 等直接 sendRequest 路径）。
+   */
+  private async startMultiProjectClients(
+    cangjieServerPath: string,
+    baseLspArgs: string[],
+    context: vscode.ExtensionContext,
+    outputChannel: vscode.OutputChannel,
+  ): Promise<void> {
+    if (!fs.existsSync(cangjieServerPath)) {
+      outputChannel.appendLine('[multi-folder] The Cangjie SDK path has not been configured properly. Please configure it first.');
+    }
+    if (!this.traceOutput) {
+      this.traceOutput = vscode.window.createOutputChannel('Cangjie Language Server Trace');
+      this.traceOutput.show();
+    }
+    serverStatus.activate(this);
+
+    for (const proj of this.projects) {
+      const name = path.basename(proj.root);
+      const clientName = `Cangjie Language Server [${name}]`;
+      // 文档过滤器：仅匹配本工程（root 或任一 member）下的文件
+      const patterns = [proj.root, ...proj.memberDirs].map((d) => path.normalize(d).replace(/\\/g, '/'));
+      const globPattern = patterns.join(',') + '/**/*';
+      // 按该工程根独立构建 initializationOptions（multiModuleOption/targetLib 等不跨工程串号）
+      const projectInitializationOptions = await this.buildProjectInitializationOptions(proj, context);
+      const clientOptions: vscodelc.LanguageClientOptions = {
+        documentSelector: [{ scheme: 'file', language: 'Cangjie', pattern: globPattern }],
+        progressOnInitialization: false, // 仅首实例显示进度，避免多个进度条
+        outputChannelName: 'Cangjie Language Server Trace',
+        stdioEncoding: 'utf8',
+        initializationOptions: projectInitializationOptions,
+        outputChannel: this.traceOutput,
+        revealOutputChannelOn: vscodelc.RevealOutputChannelOn.Never,
+        synchronize: {
+          // 仅监听本工程目录内的文件变更（缩小范围，避免跨工程误通知）
+          fileEvents: vscode.workspace.createFileSystemWatcher(
+            new vscode.RelativePattern(proj.root, '**/*'),
+            false,
+            true,
+            false,
+          ),
+        },
+        initializationFailedHandler: cangjieInitializationFailedHandler,
+        middleware: {
+          didOpen: didOpenMidware,
+          provideDocumentLinks: documentLinkMidware,
+          provideDefinition: definitionMidware,
+          provideCodeLenses: codeLensMidware,
+          provideCompletionItem: completionMidware,
+        },
+      };
+      const client = new CangjieLanguageClient(
+        clientName,
+        clientName,
+        {
+          command: cangjieServerPath,
+          args: baseLspArgs,
+          options: { cwd: proj.root, env: ChangjieContext.env },
+        } as vscodelc.Executable,
+        clientOptions,
+      );
+      client.clientOptions.errorHandler = client.createDefaultErrorHandler(0);
+      client.registerFeature(new EnableEditsNearCursorFeature());
+      breakpoints.activateForClient(client, this);
+      checkhealthy.activateForClient(client, this);
+      this.clients.set(proj.root, client);
+      outputChannel.appendLine(`[multi-folder] starting ${clientName} (cwd=${proj.root})`);
+      try {
+        await client.start();
+        outputChannel.appendLine(`[multi-folder] ${clientName} running=${client.isRunning()}`);
+      } catch (error) {
+        outputChannel.appendLine(
+          `[multi-folder] ${clientName} start failed: ${Utility.checkIsValid(error) ? (error as Error)?.message : error}`,
+        );
+      }
+    }
+
+    // 监听文本编辑，优先刷新当前编辑器，其他可见编辑器延迟刷新
+    this.registerTextChangeListener();
+
+    // 监听文件重命名，强制 LSP Server 对改名后的文件重新分析并回推诊断
+    this.registerFileRenameListener();
+
+    vscode.commands.executeCommand('cangjie.lsp.updateState', {
+      state: State.Running,
+      serverVersion: ChangjieContext.envInfo.serverVersion,
+      isSdkServer: ChangjieContext.envInfo.isSdkServer,
+    });
+    Utility.serverRun = true;
+  }
+
+  /**
+   * 为单工程构造 initializationOptions：走 Utility 的参数化管线
+   * （multiModuleOption/条件编译/targetLib 等按该工程根计算），
+   * 再附加多工程标识字段供 server 端区分。
+   */
+  private async buildProjectInitializationOptions(proj: CangjieProject, context: vscode.ExtensionContext): Promise<any> {
+    // 每个工程独立重建模块状态，避免跨工程串号
+    Utility.clearMultiModuleOption();
+    Utility.clearConditionOption();
+    const folderRoot = this.findFolderRoot(proj.root);
+    const options = await Utility.buildInitializationOptions(proj.root, folderRoot ?? proj.root);
+    const base = (options && typeof options === 'object' ? options : {}) as Record<string, unknown>;
+    return {
+      ...base,
+      projectRoot: proj.root,
+      projectCjpmToml: proj.cjpmToml,
+      projectIsWorkspace: proj.isWorkspace,
+      projectMemberDirs: proj.memberDirs,
+      extensionPath: context.extensionPath,
+    };
+  }
+
+  /** 工程根所在的工作区文件夹根（.vscode/cjpm_build_args.json 等按文件夹根取） */
+  private findFolderRoot(projRoot: string): string | undefined {
+    const folders = vscode.workspace.workspaceFolders;
+    if (!folders) {
+      return undefined;
+    }
+    const p = projRoot.replace(/\\/g, '/');
+    for (const f of folders) {
+      const fr = f.uri.fsPath.replace(/\\/g, '/');
+      if (p === fr || p.startsWith(fr + '/')) {
+        return f.uri.fsPath;
+      }
+    }
+    return undefined;
+  }
+
   async dispose(): Promise<undefined> {
     vscode.commands.executeCommand('cangjie.lsp.updateState', { state: State.Stopped });
     this.subscriptions.forEach((d) => {
       d.dispose();
     });
+    // 多工程模式：停止全部客户端
+    ChangjieContext.isStopping = true;
+    for (const client of this.clients.values()) {
+      try {
+        await client.stop();
+      } catch (err) {
+        // ignore err
+      }
+    }
+    this.clients.clear();
+    this.projects = [];
     if (!this.client) {
+      ChangjieContext.isStopping = false;
       return undefined;
     }
-    ChangjieContext.isStopping = true;
     try {
       await this.client.stop();
     } catch (err) {

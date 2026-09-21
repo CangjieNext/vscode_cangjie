@@ -17,6 +17,15 @@ export function activate(context: ChangjieContext): void {
   context.client.registerFeature(feature);
 }
 
+/**
+ * 多文件夹工作区：为单个语言服务客户端注册 check-healthy feature。
+ * 每个客户端独立监听 checkHealthy 通知；cangjie.lsp.stop 命令会停止全部客户端。
+ */
+export function activateForClient(client: any, context: ChangjieContext): void {
+  const feature = new CheckHealthyFeature(context);
+  client.registerFeature(feature);
+}
+
 class CheckHealthyFeature implements vscodelc.StaticFeature {
   private context: ChangjieContext;
   constructor(context: ChangjieContext) {

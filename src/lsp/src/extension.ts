@@ -22,37 +22,40 @@ function registerCjpmTomlModifyWatcher(context: vscode.ExtensionContext, cangjie
   if (!vscode.workspace.workspaceFolders?.[0] || Utility.getIsSingleFileMode()) {
     return;
   }
-  const multiCjpmWatcher = vscode.workspace.createFileSystemWatcher(new vscode.RelativePattern(vscode.workspace.workspaceFolders?.[0], '**/cjpm.toml'));
-  context.subscriptions.push(
-    multiCjpmWatcher.onDidChange(async (e) => {
-      const allKeysUri = Utility.getAllKeys();
-      const curModuleUri = path.dirname(e.toString());
-      if (!allKeysUri.includes(curModuleUri)) {
-        return;
-      }
-      const quickPickOptions: vscode.QuickPickOptions = {
-        title: 'cjpm.toml is modified!',
-        placeHolder: 'The cjpm.toml file has been modified, do you want to restart the LSPServer to active modifications?',
-      };
-      let fsWait = false;
-      if (fsWait) {
-        return;
-      }
-      fsWait = true;
+  // 多文件夹工作区：对每个工作区文件夹分别建 watcher（原实现只监听第一个文件夹）
+  for (const folder of vscode.workspace.workspaceFolders) {
+    const multiCjpmWatcher = vscode.workspace.createFileSystemWatcher(new vscode.RelativePattern(folder, '**/cjpm.toml'));
+    context.subscriptions.push(
+      multiCjpmWatcher.onDidChange(async (e) => {
+        const allKeysUri = Utility.getAllKeys();
+        const curModuleUri = path.dirname(e.toString());
+        if (!allKeysUri.includes(curModuleUri)) {
+          return;
+        }
+        const quickPickOptions: vscode.QuickPickOptions = {
+          title: 'cjpm.toml is modified!',
+          placeHolder: 'The cjpm.toml file has been modified, do you want to restart the LSPServer to active modifications?',
+        };
+        let fsWait = false;
+        if (fsWait) {
+          return;
+        }
+        fsWait = true;
 
-      const select = await vscode.window.showQuickPick(['Yes', 'No'], quickPickOptions);
-      if (select === 'Yes') {
-        Utility.clearMultiModuleOption();
-        await cangjieContext.dispose();
-        await Utility.delay(delay500);
-        const initializationOptions = await Utility.getInitializationOptions();
-        await cangjieContext.activate(context.globalStoragePath, outputChannel, context.workspaceState, context, initializationOptions);
-      }
-      setTimeout(() => {
-        fsWait = false;
-      }, 100);
-    }),
-  );
+        const select = await vscode.window.showQuickPick(['Yes', 'No'], quickPickOptions);
+        if (select === 'Yes') {
+          Utility.clearMultiModuleOption();
+          await cangjieContext.dispose();
+          await Utility.delay(delay500);
+          const initializationOptions = await Utility.getInitializationOptions();
+          await cangjieContext.activate(context.globalStoragePath, outputChannel, context.workspaceState, context, initializationOptions);
+        }
+        setTimeout(() => {
+          fsWait = false;
+        }, 100);
+      }),
+    );
+  }
 }
 
 async function clearAndClangdActivate(cangjieContext: ChangjieContext, context: vscode.ExtensionContext, outputChannel: OutputChannel): Promise<void> {
@@ -68,25 +71,28 @@ function registerCjpmLockCreateWatcher(context: vscode.ExtensionContext, cangjie
   if (!vscode.workspace.workspaceFolders?.[0] || Utility.getIsSingleFileMode()) {
     return;
   }
-  const moduleLockCreateWatcher = vscode.workspace.createFileSystemWatcher(new vscode.RelativePattern(vscode.workspace.workspaceFolders?.[0], '**/cjpm.lock'));
-  context.subscriptions.push(
-    moduleLockCreateWatcher.onDidCreate(async (e) => {
-      if (!cangjieContext.getLspState()) {
-        return;
-      }
-      await clearAndClangdActivate(cangjieContext, context, outputChannel);
-    }),
-  );
+  // 多文件夹工作区：对每个工作区文件夹分别建 watcher（原实现只监听第一个文件夹）
+  for (const folder of vscode.workspace.workspaceFolders) {
+    const moduleLockCreateWatcher = vscode.workspace.createFileSystemWatcher(new vscode.RelativePattern(folder, '**/cjpm.lock'));
+    context.subscriptions.push(
+      moduleLockCreateWatcher.onDidCreate(async (e) => {
+        if (!cangjieContext.getLspState()) {
+          return;
+        }
+        await clearAndClangdActivate(cangjieContext, context, outputChannel);
+      }),
+    );
 
-  const moduleLockChangeWatcher = vscode.workspace.createFileSystemWatcher(new vscode.RelativePattern(vscode.workspace.workspaceFolders?.[0], '**/cjpm.lock'));
-  context.subscriptions.push(
-    moduleLockChangeWatcher.onDidChange(async (e) => {
-      if (!cangjieContext.getLspState()) {
-        return;
-      }
-      await clearAndClangdActivate(cangjieContext, context, outputChannel);
-    }),
-  );
+    const moduleLockChangeWatcher = vscode.workspace.createFileSystemWatcher(new vscode.RelativePattern(folder, '**/cjpm.lock'));
+    context.subscriptions.push(
+      moduleLockChangeWatcher.onDidChange(async (e) => {
+        if (!cangjieContext.getLspState()) {
+          return;
+        }
+        await clearAndClangdActivate(cangjieContext, context, outputChannel);
+      }),
+    );
+  }
 }
 
 function registerRestartLspServer(context: vscode.ExtensionContext, cangjieContext: ChangjieContext, outputChannel: OutputChannel): void {
@@ -154,7 +160,10 @@ function registerTrackCompletion(context: vscode.ExtensionContext, cangjieContex
       const params: TrackCompletionParams = {
         label: item.label,
       };
-      cangjieContext.client.sendNotification('textDocument/trackCompletion', params);
+      // 多文件夹工作区：按当前活动编辑器文档路由到归属语言服务客户端
+      const doc = vscode.window.activeTextEditor?.document;
+      const target = (doc ? cangjieContext.getClientForDocument(doc) : null) ?? cangjieContext.client;
+      target?.sendNotification('textDocument/trackCompletion', params);
     }),
   );
 }
@@ -290,8 +299,15 @@ function registerLspAction(context: vscode.ExtensionContext, cangjieContext: Cha
         Utility.clearMultiModuleOption();
         if (isCrashReLaunch) {
           cangjieContext.client = null;
+          // 多文件夹工作区：逐个重置各工程客户端的重启计数
+          for (const c of cangjieContext.getAllClients()) {
+            c.resetRestartCount();
+          }
         } else {
-          cangjieContext.client.resetRestartCount();
+          cangjieContext.client?.resetRestartCount();
+          for (const c of cangjieContext.getAllClients()) {
+            c.resetRestartCount();
+          }
         }
         await cangjieContext.dispose();
         await Utility.delay(delay500);
