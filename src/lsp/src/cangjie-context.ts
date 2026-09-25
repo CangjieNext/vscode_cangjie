@@ -54,7 +54,11 @@ let client: CangjieLanguageClient | null;
 
 class CangjieLanguageClient extends vscodelc.LanguageClient {
   static restartCount = 0;
-  handleFailedRequest<T>(type: vscodelc.MessageSignature, error: any, token: vscode.CancellationToken | undefined, defaultValue: T): T {
+  // 参数顺序必须与 LanguageClient 基类保持一致：(type, token, error, defaultValue)。
+  // 原实现误写为 (type, error, token, ...)：调用方按基类顺序传参后，
+  // 函数体内的 `error` 实际拿到的是 token，导致 `error instanceof ResponseError`
+  // 恒为假、错误提示分支永不命中；同时触发 codecheck「参数顺序不一致」告警。
+  handleFailedRequest<T>(type: vscodelc.MessageSignature, token: vscode.CancellationToken | undefined, error: any, defaultValue: T): T {
     if (error instanceof vscodelc.ResponseError && type.method === 'workspace/executeCommand') {
       vscode.window.showErrorMessage(error.message);
     }

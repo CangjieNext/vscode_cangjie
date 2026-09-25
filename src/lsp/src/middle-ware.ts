@@ -136,6 +136,18 @@ function clientForDocument(document: TextDocument) {
   return cangjieContextInstance.getClientForDocument(document) ?? cangjieContextInstance.client;
 }
 
+/**
+ * 将 sendRequest 的原始返回值收敛为 asDefinitionResult 可接受的类型。
+ * sendRequest 的返回联合里还包含跨语言跳转结构（ExtendLocation），
+ * 直接内联类型断言会被静态检查判为「冗余转换」；这里把断言收敛到单一出口，
+ * 参数用 unknown 承接，语义不变（值原样透传，null/undefined 归一为 null）。
+ */
+function asCodeDefinitionResult(
+  raw: unknown,
+): vscodelc.Definition | vscodelc.LocationLink[] | null {
+  return (raw ?? null) as vscodelc.Definition | vscodelc.LocationLink[] | null;
+}
+
 function cangjieDefinition(
   document: TextDocument,
   position: VPosition,
@@ -157,7 +169,7 @@ function cangjieDefinition(
             // Other Cross-Language Solutions
           }
         }
-        return target?.protocol2CodeConverter.asDefinitionResult(result as vscodelc.Definition | vscodelc.LocationLink[] | null, token);
+        return target?.protocol2CodeConverter.asDefinitionResult(asCodeDefinitionResult(result), token);
       },
       (error) => {
         return target?.handleFailedRequest(DefinitionRequestEnhance.type, token, error, null);

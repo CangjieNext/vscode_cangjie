@@ -72,26 +72,20 @@ function registerCjpmLockCreateWatcher(context: vscode.ExtensionContext, cangjie
     return;
   }
   // 多文件夹工作区：对每个工作区文件夹分别建 watcher（原实现只监听第一个文件夹）
+  // 创建与变更的处理逻辑一致，抽成同一个 handler，避免重复实现（codecheck 告警）
+  const onModuleLockChanged = async (): Promise<void> => {
+    if (!cangjieContext.getLspState()) {
+      return;
+    }
+    await clearAndClangdActivate(cangjieContext, context, outputChannel);
+  };
+
   for (const folder of vscode.workspace.workspaceFolders) {
     const moduleLockCreateWatcher = vscode.workspace.createFileSystemWatcher(new vscode.RelativePattern(folder, '**/cjpm.lock'));
-    context.subscriptions.push(
-      moduleLockCreateWatcher.onDidCreate(async (e) => {
-        if (!cangjieContext.getLspState()) {
-          return;
-        }
-        await clearAndClangdActivate(cangjieContext, context, outputChannel);
-      }),
-    );
+    context.subscriptions.push(moduleLockCreateWatcher.onDidCreate(onModuleLockChanged));
 
     const moduleLockChangeWatcher = vscode.workspace.createFileSystemWatcher(new vscode.RelativePattern(folder, '**/cjpm.lock'));
-    context.subscriptions.push(
-      moduleLockChangeWatcher.onDidChange(async (e) => {
-        if (!cangjieContext.getLspState()) {
-          return;
-        }
-        await clearAndClangdActivate(cangjieContext, context, outputChannel);
-      }),
-    );
+    context.subscriptions.push(moduleLockChangeWatcher.onDidChange(onModuleLockChanged));
   }
 }
 

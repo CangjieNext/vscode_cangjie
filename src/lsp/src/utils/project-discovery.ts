@@ -199,7 +199,7 @@ function loadVscode(): typeof import('vscode') {
     // 延迟加载：让纯函数核心在无 vscode 环境下可被 import（单元测试）
     vscodeApi = require('vscode');
   }
-  return vscodeApi!;
+  return vscodeApi;
 }
 
 /**
