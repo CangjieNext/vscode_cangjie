@@ -22,7 +22,7 @@
 
 ### SDK路径配置
 
-1. 单击左下角齿轮图标，选择设置选项。在搜索栏输入 `Cangjie` ，选择侧边栏的 `Cangjie Language Support` 选项。
+1. 单击左下角齿轮图标，选择设置选项。在搜索栏输入 `Cangjie`，选择侧边栏的 `Cangjie Language Support` 选项。
 2. 找到 `Cangjie Sdk: Option` 选项，选择后端类型为 `CJNative`（默认是此选项）。
 3. 找到 `Cangjie Sdk Path: CJNative Backend` 选项，输入 CJNative 后端 SDK 文件夹所在绝对路径。
 4. 重启 VSCode 生效。
