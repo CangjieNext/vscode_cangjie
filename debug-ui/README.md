@@ -86,7 +86,7 @@ npm run build
 npm run watch
 ```
 
-在其它子项目导入ui-common的方法，使用导入格式 
+在其他子项目导入ui-common的方法，使用导入格式 
 ```
 import {IdeType} from 'ui-common'
 ```
