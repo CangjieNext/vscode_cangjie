@@ -1,0 +1,26 @@
+src/tools/src/cjlint/cjlint-on-save.ts
+  s_85e892aa0d03e1::t_0d7ad8f299b7c3 86
+src/lsp/src/cangjie-context.ts
+  s_85e892aa0d03e1::t_be745f502684fd 155
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.22",
+  "base_commit_sha": "2e0a295ac60d4efea46f37214c3c772f0ab005fc",
+  "prompts": {},
+  "humans": {
+    "h_70f5ff6b50bd67": {
+      "author": "ennka <yuanke6@h-partners.com>"
+    }
+  },
+  "sessions": {
+    "s_85e892aa0d03e1": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_006cade8effeFGo3s33JM9PjuS",
+        "model": "unknown"
+      },
+      "human_author": "ennka <yuanke6@h-partners.com>"
+    }
+  }
+}
