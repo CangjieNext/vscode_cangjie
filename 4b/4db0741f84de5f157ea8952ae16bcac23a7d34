@@ -1,0 +1,16 @@
+src/dap/src/cangjie-debug-adapter-descriptor-factory.ts
+  h_70f5ff6b50bd67 186-188,194-196,202-204,626
+src/dap/src/pythonEnvironment/python-version-validator.ts
+  h_70f5ff6b50bd67 112,114,116,118,125-160,171-173,175-178,181,222
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "4b4db0741f84de5f157ea8952ae16bcac23a7d34",
+  "prompts": {},
+  "humans": {
+    "h_70f5ff6b50bd67": {
+      "author": "ennka <yuanke6@h-partners.com>"
+    }
+  }
+}
