@@ -1,0 +1,19 @@
+debug-ui/ui-common/src/message/MessageManager.ts
+  s_dcf4883a6bfac3::t_1d211e53cb0789 102
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.22",
+  "base_commit_sha": "4a5228d2c7bd7666098af7bf8a4665a43a40e81a",
+  "prompts": {},
+  "sessions": {
+    "s_dcf4883a6bfac3": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_fddfb95d1ffeBp5OPn0LcTXpe6",
+        "model": "unknown"
+      },
+      "human_author": "ennka <yuanke6@h-partners.com>"
+    }
+  }
+}
