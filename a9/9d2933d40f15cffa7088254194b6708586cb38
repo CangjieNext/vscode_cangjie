@@ -1,0 +1,24 @@
+.gitcode/ISSUE_TEMPLATE/bug-report.yml
+  h_70f5ff6b50bd67 1-55
+.gitcode/ISSUE_TEMPLATE/config.yml
+  h_70f5ff6b50bd67 1
+.gitcode/ISSUE_TEMPLATE/feature-request.yml
+  h_70f5ff6b50bd67 1-35
+.gitcode/ISSUE_TEMPLATE/question.yml
+  h_70f5ff6b50bd67 1-29
+.gitcode/PULL_REQUEST_TEMPLATE/PULL_REQUEST_TEMPLATE.md
+  h_70f5ff6b50bd67 1-30
+.gitcode/PULL_REQUEST_TEMPLATE/PULL_REQUEST_TEMPLATE_chinese.md
+  h_70f5ff6b50bd67 1-30
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.22",
+  "base_commit_sha": "a99d2933d40f15cffa7088254194b6708586cb38",
+  "prompts": {},
+  "humans": {
+    "h_70f5ff6b50bd67": {
+      "author": "ennka <yuanke6@h-partners.com>"
+    }
+  }
+}
