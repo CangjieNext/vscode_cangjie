@@ -1,0 +1,14 @@
+package.json
+  h_70f5ff6b50bd67 827
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.24",
+  "base_commit_sha": "c95960c243fbd185411dcbbb666f7ecfdbc44aeb",
+  "prompts": {},
+  "humans": {
+    "h_70f5ff6b50bd67": {
+      "author": "ennka <yuanke6@h-partners.com>"
+    }
+  }
+}
