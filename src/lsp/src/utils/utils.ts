@@ -595,6 +595,8 @@ export class Utility {
       this.baseTargetFeatures = features.split(',').map(item => item.trim()).filter(item => item !== '');
     }
     await this.setCentralRepoPath();
+    // 多工程支持：清空后逐工程合并依赖版本，避免后一个工程覆盖前一个工程的版本信息
+    this.centralRepoVersion = {};
     for (const projectRoot of cjProjectRoots) {
       this.projectType = Utility.detectProjectType(projectRoot);
       await this.getCjpmLockVersion(projectRoot);
@@ -1441,7 +1443,8 @@ export class Utility {
       }
     }
 
-    this.centralRepoVersion = versionMap;
+    // 多工程支持：合并而非覆盖，保留前面工程已解析的依赖版本
+    Object.assign(this.centralRepoVersion, versionMap);
   }
 
   static mergeUniqueStrings(...arrays: string[][]): string[] {
