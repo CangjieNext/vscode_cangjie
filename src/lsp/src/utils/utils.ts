@@ -899,11 +899,17 @@ export class Utility {
     }
     if (
       Object.prototype.hasOwnProperty.call(moduleLockData, lockSection) &&
-      Object.prototype.hasOwnProperty.call(moduleLockData[lockSection], moduleName) &&
-      this.checkIsValid(moduleLockData[lockSection][moduleName][gitCommitIdKey])
+      Object.prototype.hasOwnProperty.call(moduleLockData[lockSection], moduleName)
     ) {
-      this.rootModuleLockData = moduleLockData;
-      return path.join(cjpmConfigPath, moduleName, moduleLockData[lockSection][moduleName][gitCommitIdKey]);
+      const moduleLockInfo = moduleLockData[lockSection][moduleName];
+      let commitId = moduleLockInfo[gitCommitIdKey];
+      if (Number(moduleLockData[PROJECT_VERSION]) === 1) {
+        commitId = this.getCommitIdV1(moduleLockInfo.source);
+      }
+      if (this.checkIsValid(commitId)) {
+        this.rootModuleLockData = moduleLockData;
+        return path.join(cjpmConfigPath, moduleName, commitId);
+      }
     }
     window.showWarningMessage('The cjpm.lock file does not exist or is invalid. Please run cjpm update.');
     return '';
@@ -1791,5 +1797,21 @@ export class Utility {
       return true;
     }
     return false;
+  }
+
+  /**
+   * Extract the commit ID after the last '#' in a version 1 cjpm.lock source.
+   * Used for both requires and scripts entries.
+   *
+   * @param source Dependency source, e.g., git+https://example.com/mock.git#commitId
+   * @returns The commit ID, or an empty string if source is not a string,
+   * has no '#', or has no value after the last '#'.
+   */
+  private static getCommitIdV1(source: unknown): string {
+    if (typeof source !== 'string') {
+      return '';
+    }
+    const hashIndex = source.lastIndexOf('#');
+    return hashIndex >= 0 ? source.substring(hashIndex + 1) : '';
   }
 }
