@@ -150,4 +150,4 @@ Click the `run | debug` CodeLens above an `@Test` or `@TestCase` declaration to 
 
 ## License
 
-This extension is licensed under the Apache License 2.0. See [LICENSE](https://gitcode.com/Cangjie/vscode_cangjie/blob/main/LICENSE) for details.
+This extension is licensed under the Apache License 2.0. See [LICENSE](https://atomgit.com/Cangjie/vscode_cangjie/blob/main/LICENSE) for details.

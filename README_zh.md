@@ -152,4 +152,4 @@ VSCode 中可视化方式提供的仓颉功能编译构建能力依赖 cjpm 工�
 
 ## 许可证
 
-本插件采用 Apache-2.0 许可证。详情请参阅 [LICENSE](https://gitcode.com/Cangjie/vscode_cangjie/blob/main/LICENSE)。
+本插件采用 Apache-2.0 许可证。详情请参阅 [LICENSE](https://atomgit.com/Cangjie/vscode_cangjie/blob/main/LICENSE)。
