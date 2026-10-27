@@ -1,0 +1,19 @@
+src/lsp/src/utils/utils.ts
+  s_50bfce5c3caeb9::t_a3447f55106b28 902,904-912,1801-1816
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "25c54bafe1cf373b5eacd2e12437ae97c3bffa63",
+  "prompts": {},
+  "sessions": {
+    "s_50bfce5c3caeb9": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e9d81922affeqn73lQ6J7aqjo5",
+        "model": "unknown"
+      },
+      "human_author": null
+    }
+  }
+}
