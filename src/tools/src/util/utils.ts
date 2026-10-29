@@ -166,7 +166,7 @@ export class Utility {
     } else {
       configuredSdkPath = <string>workspace.getConfiguration('CangjieSdkPath').get('CJVMBackend');
     }
-    return configuredSdkPath || process.env.CANGJIE_HOME;
+    return configuredSdkPath || process.env.CANGJIE_HOME || '';
   }
 
   static async configTerminalcjpmEnv(): Promise<void> {
