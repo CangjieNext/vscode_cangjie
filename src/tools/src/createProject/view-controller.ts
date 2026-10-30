@@ -13,6 +13,8 @@ import { Utility } from '../util/utils';
 import { OutputHelper } from '../util/output-helper';
 import { Commands } from './command';
 import { CreateProjectUtils } from './create-project-utils';
+import {expandWorkspacePlaceholders} from '../util/sdk-path-utils';
+import {workspace} from 'vscode';
 
 export class ViewController {
   private disposable: vscode.Disposable;
@@ -67,12 +69,12 @@ export class ViewController {
           return;
         case 'finishSetting':
           if (message.compileBackend === 'CJNative') {
-            curPathSdk = <string>vscode.workspace.getConfiguration('CangjieSdkPath').get('CJNativeBackend') ||
-              process.env.CANGJIE_HOME;
+            curPathSdk = <string>vscode.workspace.getConfiguration('CangjieSdkPath').get('CJNativeBackend');
           } else {
-            curPathSdk = <string>vscode.workspace.getConfiguration('CangjieSdkPath').get('CJVMBackend') ||
-              process.env.CANGJIE_HOME;
+            curPathSdk = <string>vscode.workspace.getConfiguration('CangjieSdkPath').get('CJVMBackend');
           }
+          curPathSdk = expandWorkspacePlaceholders(curPathSdk, workspace.workspaceFolders?.[0]?.uri.fsPath) ||
+            process.env.CANGJIE_HOME || '';
           this.finishSetting(message, curPathSdk, CreateProjectUtils.panel);
           return;
         default:

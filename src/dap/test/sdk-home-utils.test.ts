@@ -26,6 +26,7 @@ describe.each([
   let originalIsCreatedProject: boolean;
   let originalOutputType: string;
   let configuredSdkPath: string | undefined;
+  let originalWorkspaceFolders: typeof workspace.workspaceFolders;
 
   beforeEach(() => {
     originalCangjieHome = process.env.CANGJIE_HOME;
@@ -35,6 +36,8 @@ describe.each([
     ToolsUtility.isCreatedProject = isCreatedProject;
     ToolsUtility.outputType = outputType;
     configuredSdkPath = '';
+    originalWorkspaceFolders = workspace.workspaceFolders;
+    workspace.workspaceFolders = [{uri: {fsPath: path.resolve('workspace with spaces')} as any}];
     const sdkBackend = isCreatedProject ?
       (outputType === 'executable' ? 'CJNative' : 'CJVM') : backend;
     jest.spyOn(workspace, 'getConfiguration').mockImplementation((section: string) => ({
@@ -58,6 +61,7 @@ describe.each([
     }
     ToolsUtility.isCreatedProject = originalIsCreatedProject;
     ToolsUtility.outputType = originalOutputType;
+    workspace.workspaceFolders = originalWorkspaceFolders;
     jest.restoreAllMocks();
   });
 
@@ -81,5 +85,23 @@ describe.each([
     configuredSdkPath = '/configured/sdk';
     process.env.CANGJIE_HOME = '/environment/sdk';
     expect(utility.getCangjieHome()).toBe('/configured/sdk');
+  });
+
+  test.each(['${workspaceFolder}', '${workspace}'])('expands %s before considering CANGJIE_HOME', (placeholder) => {
+    configuredSdkPath = `${placeholder}/sdk`;
+    process.env.CANGJIE_HOME = '/environment/sdk';
+    expect(utility.getCangjieHome()).toBe(path.resolve('workspace with spaces', 'sdk'));
+  });
+
+  test('does not replace unresolved explicit configuration with the environment', () => {
+    workspace.workspaceFolders = [];
+    configuredSdkPath = '${workspaceFolder}/sdk';
+    process.env.CANGJIE_HOME = '/environment/sdk';
+    expect(utility.getCangjieHome()).toBe(configuredSdkPath);
+  });
+
+  test('does not interpret workspace placeholders in environment values', () => {
+    process.env.CANGJIE_HOME = '/environment/${workspaceFolder}/sdk';
+    expect(utility.getCangjieHome()).toBe(process.env.CANGJIE_HOME);
   });
 });

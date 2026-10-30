@@ -8,7 +8,7 @@
 
 import type {Extension, ExtensionContext} from 'vscode';
 import * as vscode from 'vscode';
-import {commands, Disposable, extensions, window} from 'vscode';
+import {commands, Disposable, extensions, window, workspace} from 'vscode';
 import {Commands} from './command';
 import {Utility} from '../util/utils';
 import {OutputHelper} from '../util/output-helper';
@@ -26,6 +26,7 @@ import {
   projectTypes
 } from './project-controller-type';
 import {CreateProjectUtils} from './create-project-utils';
+import {expandWorkspacePlaceholders} from '../util/sdk-path-utils';
 
 export class ProjectController implements Disposable {
   private disposable: Disposable;
@@ -69,12 +70,12 @@ export class ProjectController implements Disposable {
     }
     let curPathSdk = pathSdk;
     if (choice.metadata.type === CompileBackendType.CJVM) {
-      curPathSdk = <string>vscode.workspace.getConfiguration('CangjieSdkPath').get('CJVMBackend') ||
-        process.env.CANGJIE_HOME;
+      curPathSdk = <string>vscode.workspace.getConfiguration('CangjieSdkPath').get('CJVMBackend');
     } else {
-      curPathSdk = <string>vscode.workspace.getConfiguration('CangjieSdkPath').get('CJNativeBackend') ||
-        process.env.CANGJIE_HOME;
+      curPathSdk = <string>vscode.workspace.getConfiguration('CangjieSdkPath').get('CJNativeBackend');
     }
+    curPathSdk = expandWorkspacePlaceholders(curPathSdk, workspace.workspaceFolders?.[0]?.uri.fsPath) ||
+      process.env.CANGJIE_HOME || '';
     await chooseOutputType(choice.metadata.type, curPathSdk);
   }
 }

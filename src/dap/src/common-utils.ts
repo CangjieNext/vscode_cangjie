@@ -42,6 +42,7 @@ import type {CangjieDebugConfiguration} from './cangjie-debug-configuration';
 import {tomlParser, tomlStringify} from './command';
 import { exec } from 'child_process';
 import { CangjieDependencyBuilder } from './config/cangjie-dependency-builder';
+import {expandWorkspacePlaceholders} from './sdk-path-utils';
 
 let extensionPath: string;
 
@@ -511,7 +512,6 @@ export function changeToEscapeCharacter(str: string): string {
   result = result.replace(/\\/g, '\\\\');
   result = result.replace(/\n/g, '\\n');
   result = result.replace(/\t/g, '\\t');
-  result = result.replace(/\o/g, '\\o');
   result = result.replace(/\r/g, '\\r');
   result = result.replace(/\v/g, '\\v');
   result = result.replace(/[\b]/g, '\\b');
@@ -957,7 +957,8 @@ export function getSdkPath(): string {
   let sdkOption = getSdkOption();
   let backendType = sdkOption === 'CJNative' ? 'CJNativeBackend' : 'CJVMBackend';
   const configuredSdkPath = <string>workspace.getConfiguration('CangjieSdkPath').get(backendType);
-  const sdkPath = configuredSdkPath || process.env.CANGJIE_HOME;
+  const sdkPath = expandWorkspacePlaceholders(configuredSdkPath, workspace.workspaceFolders?.[0]?.uri.fsPath) ||
+    process.env.CANGJIE_HOME;
   if (!sdkPath || !fs.existsSync(sdkPath)) {
     throw Error('The Cangjie SDK path has not been configured properly. Please configure it first.');
   }

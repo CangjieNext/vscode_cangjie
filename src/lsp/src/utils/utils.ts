@@ -72,6 +72,7 @@ import * as os from 'os';
 import * as childProcess from 'child_process';
 import * as vscode from 'vscode';
 import { CommonSpecificUtility } from './common-specific-utils';
+import {expandWorkspacePlaceholders} from './sdk-path-utils';
 
 interface InitializationData {
   multiModuleOption: unknown;
@@ -459,13 +460,10 @@ export class Utility {
   }
 
   static getCangjieHome(): string {
-    let configuredSdkPath: string;
-    if (this.getSdkOption() === 'CJNative') {
-      configuredSdkPath = <string>workspace.getConfiguration('CangjieSdkPath').get('CJNativeBackend');
-    } else {
-      configuredSdkPath = <string>workspace.getConfiguration('CangjieSdkPath').get('CJVMBackend');
-    }
-    return configuredSdkPath || process.env.CANGJIE_HOME || '';
+    const backendType = this.getSdkOption() === 'CJNative' ? 'CJNativeBackend' : 'CJVMBackend';
+    const sdkPath = <string>workspace.getConfiguration('CangjieSdkPath').get(backendType);
+    return expandWorkspacePlaceholders(sdkPath, workspace.workspaceFolders?.[0]?.uri.fsPath) ||
+      process.env.CANGJIE_HOME || '';
   }
 
   static getEnvPaths(): string[] {
@@ -901,11 +899,17 @@ export class Utility {
     }
     if (
       Object.prototype.hasOwnProperty.call(moduleLockData, lockSection) &&
-      Object.prototype.hasOwnProperty.call(moduleLockData[lockSection], moduleName) &&
-      this.checkIsValid(moduleLockData[lockSection][moduleName][gitCommitIdKey])
+      Object.prototype.hasOwnProperty.call(moduleLockData[lockSection], moduleName)
     ) {
-      this.rootModuleLockData = moduleLockData;
-      return path.join(cjpmConfigPath, moduleName, moduleLockData[lockSection][moduleName][gitCommitIdKey]);
+      const moduleLockInfo = moduleLockData[lockSection][moduleName];
+      let commitId = moduleLockInfo[gitCommitIdKey];
+      if (Number(moduleLockData[PROJECT_VERSION]) >= 1) {
+        commitId = this.getCommitIdBySource(moduleLockInfo.source);
+      }
+      if (this.checkIsValid(commitId)) {
+        this.rootModuleLockData = moduleLockData;
+        return path.join(cjpmConfigPath, moduleName, commitId);
+      }
     }
     window.showWarningMessage('The cjpm.lock file does not exist or is invalid. Please run cjpm update.');
     return '';
@@ -1754,15 +1758,16 @@ export class Utility {
    * If not found, check if `repoVersion` is an exact version; otherwise, return an empty string.
    *
    * @param project The project name.
-   * @param repoVersion The currently set dependency version, which could be a version range.
+   * @param repoVersion The dependency version string or a dependency table containing a version.
    * @returns The specific version string, or an empty string if not determinable.
    */
-  private static getProjectVersion(project: string, repoVersion: string): string {
+  private static getProjectVersion(project: string, repoVersion: string | Require): string {
     if (Object.prototype.hasOwnProperty.call(this.centralRepoVersion, project)) {
       return this.centralRepoVersion[project];
     }
-    if (this.isExactVersion(repoVersion)) {
-      return repoVersion;
+    const version = typeof repoVersion === 'string' ? repoVersion : repoVersion?.version;
+    if (typeof version === 'string' && this.isExactVersion(version)) {
+      return version;
     }
     return '';
   }
@@ -1793,5 +1798,21 @@ export class Utility {
       return true;
     }
     return false;
+  }
+
+  /**
+   * Extract the commit ID after the last '#' in the new cjpm.lock source format.
+   * Used for version 1 and later, and for both requires and scripts entries.
+   *
+   * @param source Dependency source, e.g., git+https://example.com/mock.git#commitId
+   * @returns The commit ID, or an empty string if source is not a string,
+   * has no '#', or has no value after the last '#'.
+   */
+  private static getCommitIdBySource(source: unknown): string {
+    if (typeof source !== 'string') {
+      return '';
+    }
+    const hashIndex = source.lastIndexOf('#');
+    return hashIndex >= 0 ? source.substring(hashIndex + 1) : '';
   }
 }
