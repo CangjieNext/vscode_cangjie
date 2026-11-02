@@ -462,7 +462,8 @@ export class Utility {
   static getCangjieHome(): string {
     const backendType = this.getSdkOption() === 'CJNative' ? 'CJNativeBackend' : 'CJVMBackend';
     const sdkPath = <string>workspace.getConfiguration('CangjieSdkPath').get(backendType);
-    return expandWorkspacePlaceholders(sdkPath, workspace.workspaceFolders?.[0]?.uri.fsPath);
+    return expandWorkspacePlaceholders(sdkPath, workspace.workspaceFolders?.[0]?.uri.fsPath) ||
+      process.env.CANGJIE_HOME || '';
   }
 
   static getEnvPaths(): string[] {

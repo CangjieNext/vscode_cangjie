@@ -199,8 +199,9 @@ export class CangjieEnvConfiguration {
 
   private generateSdkPath(): void {
     const backendTypeConfigName = backendTypeConfig.get(this.backendType);
-    let sdkPath: string = <string>workspace.getConfiguration('CangjieSdkPath').get(backendTypeConfigName);
-    sdkPath = expandWorkspacePlaceholders(sdkPath, workspace.workspaceFolders?.[0]?.uri.fsPath);
+    const configuredSdkPath = <string>workspace.getConfiguration('CangjieSdkPath').get(backendTypeConfigName);
+    const sdkPath = expandWorkspacePlaceholders(configuredSdkPath, workspace.workspaceFolders?.[0]?.uri.fsPath) ||
+      process.env.CANGJIE_HOME;
     if (!sdkPath || !fs.existsSync(sdkPath)) {
       throw Error('The Cangjie SDK path has not been configured properly. Please configure it first.');
     }

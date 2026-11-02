@@ -956,8 +956,9 @@ function checkProcessExistence(processPath: string): Promise<boolean> {
 export function getSdkPath(): string {
   let sdkOption = getSdkOption();
   let backendType = sdkOption === 'CJNative' ? 'CJNativeBackend' : 'CJVMBackend';
-  let sdkPath: string = <string>workspace.getConfiguration('CangjieSdkPath').get(backendType);
-  sdkPath = expandWorkspacePlaceholders(sdkPath, workspace.workspaceFolders?.[0]?.uri.fsPath);
+  const configuredSdkPath = <string>workspace.getConfiguration('CangjieSdkPath').get(backendType);
+  const sdkPath = expandWorkspacePlaceholders(configuredSdkPath, workspace.workspaceFolders?.[0]?.uri.fsPath) ||
+    process.env.CANGJIE_HOME;
   if (!sdkPath || !fs.existsSync(sdkPath)) {
     throw Error('The Cangjie SDK path has not been configured properly. Please configure it first.');
   }

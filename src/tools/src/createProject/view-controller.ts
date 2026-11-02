@@ -73,7 +73,8 @@ export class ViewController {
           } else {
             curPathSdk = <string>vscode.workspace.getConfiguration('CangjieSdkPath').get('CJVMBackend');
           }
-          curPathSdk = expandWorkspacePlaceholders(curPathSdk, workspace.workspaceFolders?.[0]?.uri.fsPath);
+          curPathSdk = expandWorkspacePlaceholders(curPathSdk, workspace.workspaceFolders?.[0]?.uri.fsPath) ||
+            process.env.CANGJIE_HOME || '';
           this.finishSetting(message, curPathSdk, CreateProjectUtils.panel);
           return;
         default:

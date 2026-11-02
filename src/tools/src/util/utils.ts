@@ -164,7 +164,8 @@ export class Utility {
       backendType = this.getSdkOption() === 'CJNative' ? 'CJNativeBackend' : 'CJVMBackend';
     }
     const sdkPath = <string>workspace.getConfiguration('CangjieSdkPath').get(backendType);
-    return expandWorkspacePlaceholders(sdkPath, workspace.workspaceFolders?.[0]?.uri.fsPath);
+    return expandWorkspacePlaceholders(sdkPath, workspace.workspaceFolders?.[0]?.uri.fsPath) ||
+      process.env.CANGJIE_HOME || '';
   }
 
   static async configTerminalcjpmEnv(): Promise<void> {

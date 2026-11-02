@@ -74,7 +74,8 @@ export class ProjectController implements Disposable {
     } else {
       curPathSdk = <string>vscode.workspace.getConfiguration('CangjieSdkPath').get('CJNativeBackend');
     }
-    curPathSdk = expandWorkspacePlaceholders(curPathSdk, workspace.workspaceFolders?.[0]?.uri.fsPath);
+    curPathSdk = expandWorkspacePlaceholders(curPathSdk, workspace.workspaceFolders?.[0]?.uri.fsPath) ||
+      process.env.CANGJIE_HOME || '';
     await chooseOutputType(choice.metadata.type, curPathSdk);
   }
 }
