@@ -824,11 +824,12 @@
                 },
                 {
                     "command": "cangjie.build",
-                    "when": "resourceExtname == .cj && cangjie.showBuildToolBar !=  false",
+                    "when": "resourceExtname == .cj && cangjie.isCangjieProject && cangjie.showBuildToolBar =~ /^(?!false$)/",
                     "group": "navigation@2"
                 },
                 {
                     "command": "cangjieBuild.editBuildConfiguration",
+                    "when": "cangjie.isCangjieProject",
                     "group": "navigation@3"
                 }
             ],

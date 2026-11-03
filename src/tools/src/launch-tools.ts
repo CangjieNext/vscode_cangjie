@@ -35,6 +35,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     registerTomlUtil();
   }
 
+  registerCangjieProjectContext(context);
+
   Utility.removeSdkAttributes();
 
   context.subscriptions.push(new ProjectController(context));
@@ -103,6 +105,29 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
   // Visibility sdk configuration
   context.subscriptions.push(new SdkConfigurationView(context));
+}
+
+function registerCangjieProjectContext(context: vscode.ExtensionContext): void {
+  const updateContext = (): Thenable<unknown> => vscode.commands.executeCommand(
+    'setContext',
+    'cangjie.isCangjieProject',
+    Boolean(vscode.workspace.workspaceFolders?.length) && Utility.isCangjieProject()
+  );
+
+  updateContext();
+
+  const cjpmWatcher = vscode.workspace.createFileSystemWatcher('**/cjpm.toml');
+  context.subscriptions.push(
+    cjpmWatcher,
+    cjpmWatcher.onDidCreate(updateContext),
+    cjpmWatcher.onDidDelete(updateContext),
+    vscode.workspace.onDidChangeWorkspaceFolders(updateContext),
+    vscode.workspace.onDidChangeConfiguration((event) => {
+      if (event.affectsConfiguration('Cangjie.Root.Cjpm.Path')) {
+        updateContext();
+      }
+    })
+  );
 }
 
 function registerJsonWatcher(context: vscode.ExtensionContext): void {
