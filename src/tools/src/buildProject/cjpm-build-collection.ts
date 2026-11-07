@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (c) Huawei Technologies Co., Ltd. 2026. All rights reserved.
  * This source file is part of the Cangjie project, licensed under Apache-2.0
  * with Runtime Library Exception.
@@ -368,9 +368,9 @@ export class CjpmBuildCollection {
       // whether execute binary
       let outputType = Utility.getTomlValueByTreeKeys([PACKAGE, OUTPUT_TYPE]) as string;
       if (outputType === 'executable') {
-        TerminalHelper.execCommand(this.getCjpmRunCmd());
+        this.execBuildCommand(this.getCjpmRunCmd());
       } else {
-        TerminalHelper.execCommand(this.getCjpmBuildCmd());
+        this.execBuildCommand(this.getCjpmBuildCmd());
       }
     }));
     vscode.commands.executeCommand('setContext', 'cangjie.run.state', true);
@@ -378,8 +378,18 @@ export class CjpmBuildCollection {
 
   private registerBuildButton(): void {
     this.context.subscriptions.push(vscode.commands.registerCommand('cangjie.build', async () => {
-      TerminalHelper.execCommand(this.getCjpmBuildCmd());
+      this.execBuildCommand(this.getCjpmBuildCmd());
     }));
+  }
+
+  private execBuildCommand(cjpmCmd: string): void {
+    // append the compatibility target configured in the build configuration UI
+    const compatCmd = Utility.appendCompatVersion(cjpmCmd);
+    if (compatCmd.error !== '') {
+      vscode.window.showErrorMessage(compatCmd.error);
+      return;
+    }
+    TerminalHelper.execCommand(compatCmd.cmd);
   }
 
   private getCjpmBuildCmd(): string {

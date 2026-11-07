@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (c) Huawei Technologies Co., Ltd. 2026. All rights reserved.
  * This source file is part of the Cangjie project, licensed under Apache-2.0
  * with Runtime Library Exception.
@@ -20,6 +20,7 @@ import {
 } from '../util/constant-num';
 import type { CjpmBuildArgs } from '../util/cjpm-config-data';
 import type { ConfigSetMessage } from '../util/message-data';
+import { COMPAT_VERSION_FIELD } from '../util/compat-version';
 import * as path from 'path';
 import type {CustomTomlTypes} from '../util/toml/toml-types';
 import {stringify} from '../util/toml/toml-export';
@@ -74,6 +75,10 @@ export class SettingsProvider extends ViewProvider {
           vscode.window.showWarningMessage('the coverage is only setted up in CJNative path');
           break;
         }
+        if (message.key === COMPAT_VERSION_FIELD) {
+          this.updateCompatVersion(<string>message.value);
+          break;
+        }
         this.updateConfig(message);
         break;
       }
@@ -81,6 +86,7 @@ export class SettingsProvider extends ViewProvider {
         this.initialized = true;
         this.settingsProviderActivated.fire();
         this.updateWebview(this.getcjpmBuildArgs(), this.getCjpmContent());
+        this.postCompatVersions();
         break;
       }
       case 'addConfig': {
@@ -107,6 +113,46 @@ export class SettingsProvider extends ViewProvider {
         break;
       }
     }
+  }
+
+  private postCompatVersions(): void {
+    if (!Utility.checkIsValid(this.panel)) {
+      return;
+    }
+    // Refresh the candidate list whenever the configuration UI is opened/updated, so that a toolchain
+    // switched at the same path is also respected.
+    const supported = Utility.getSupportedCompatVersions(true);
+    this.panel.webview.postMessage({
+      command: 'settedCompatVersions',
+      config: {
+        versions: supported ?? [],
+        supported: supported !== undefined,
+        selected: Utility.getStoredCompatVersion(),
+      },
+    });
+  }
+
+  private updateCompatVersion(value: string): void {
+    const newValue = typeof value === 'string' ? value.trim() : '';
+    if (newValue !== '') {
+      const supported = Utility.getSupportedCompatVersions();
+      if (supported === undefined || !supported.includes(newValue)) {
+        vscode.window.showErrorMessage(`The compatibility target SDK version '${newValue}' is not supported by ` +
+          'the current toolchain, the previous selection is kept.');
+        this.postCompatVersions();
+        return;
+      }
+    }
+    if (newValue === Utility.getStoredCompatVersion()) {
+      return;
+    }
+    this.updateJsonConfig(COMPAT_VERSION_FIELD, this.cjpmbuildPath, newValue);
+    // The language service must diagnose with the same target as the following builds.
+    vscode.commands.executeCommand('cangjie.restart').then(
+      () => {},
+      () => {
+        // the language server extension may be inactive (e.g. no SDK configured); there is nothing to restart then
+      });
   }
 
   private updateConfig(message: ConfigSetMessage): void {

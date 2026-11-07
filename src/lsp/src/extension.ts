@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (c) Huawei Technologies Co., Ltd. 2026. All rights reserved.
  * This source file is part of the Cangjie project, licensed under Apache-2.0
  * with Runtime Library Exception.
@@ -248,7 +248,10 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     vscode.commands.registerCommand('cangjie.restart', async () => {
       await cangjieContext.dispose();
       await Utility.delay(delay500);
-      await cangjieContext.activate(context.globalStoragePath, outputChannel, context.workspaceState, context);
+      // Recompute the initialization options so that project settings (e.g. the compatibility target) are refreshed.
+      const initializationOptions = await Utility.getInitializationOptions();
+      await cangjieContext.activate(context.globalStoragePath, outputChannel, context.workspaceState, context,
+        initializationOptions);
     }),
   );
 

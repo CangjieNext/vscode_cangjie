@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (c) Huawei Technologies Co., Ltd. 2026. All rights reserved.
  * This source file is part of the Cangjie project, licensed under Apache-2.0
  * with Runtime Library Exception.
@@ -14,6 +14,8 @@ import type {Uri, WorkspaceFolder} from 'vscode';
 import {ConfigurationTarget, window, workspace} from 'vscode';
 import {CJPM_TOML, cjpmBuildArgExtname, cjpmBuildArgs, CUSTOMIZED_OPTION, delay100, DEPENDENCIES, DEV_DEPENDENCIES, SCRIPT_DEPENDENCIES, envPathName, PACKAGE, PROFILE, SOURCE_SET, SRC, SRC_DIR} from './constant-num';
 import {OutputHelper} from './output-helper';
+import {COMPAT_VERSION_FIELD, COMPAT_VERSION_OPTION, isCompatVersionFormatValid,
+  parseCompatVersionsFromCjcHelp} from './compat-version';
 import type {CjpmBuildArgs, ModuleJson} from './cjpm-config-data';
 import type {CustomTomlTypes} from './toml/toml-types';
 import {parse} from './toml/toml-export';
@@ -404,6 +406,20 @@ export class Utility {
     }
     const buildArgs = Utility.checkIsValid(buildArg) ? buildArg : cjpmBuildArgs;
     const cjpmBuildArgsPath = path.join(Utility.getWorkspaceFolders(), '/.vscode/cjpm_build_args.json');
+    if (!Utility.checkIsValid(buildArg) && fs.existsSync(cjpmBuildArgsPath)) {
+      // Upgrade an existing configuration without losing the values selected by the user:
+      // only fill the fields that are newly introduced by this extension version.
+      const existingArgs = Utility.getCjpmBuildArgsContent(cjpmBuildArgExtname) as unknown as Record<string, unknown>;
+      if (Utility.checkIsValid(existingArgs) && typeof existingArgs === 'object' &&
+        !Object.keys(cjpmBuildArgs).every((key) => Object.prototype.hasOwnProperty.call(existingArgs, key))) {
+        try {
+          fs.writeFileSync(cjpmBuildArgsPath, JSON.stringify({...cjpmBuildArgs, ...existingArgs}, null, '\t'));
+        } catch (error) {
+          OutputHelper.appendLine(error);
+        }
+        return;
+      }
+    }
     if (fs.existsSync(cjpmBuildArgsPath) &&
       Object.keys(Utility.getCjpmBuildArgsContent(cjpmBuildArgExtname)).length === Object.keys(buildArgs).length) {
       return;
@@ -438,6 +454,88 @@ export class Utility {
     }
     const curCjpmBuildArgs = fs.readFileSync(jsonPath, 'utf8');
     return curCjpmBuildArgs === '' ? '' : JSON.parse(curCjpmBuildArgs);
+  }
+
+  // Compatibility target versions accepted by the current toolchain; undefined when the list can not be read.
+  private static supportedCompatVersions: string[] | undefined = undefined;
+
+  private static compatVersionsCangjieHome: string = '';
+
+  static getStoredCompatVersion(): string {
+    if (!Utility.checkIsValid(Utility.getWorkspaceFolders())) {
+      return '';
+    }
+    const buildArgs = Utility.getCjpmBuildArgsContent(cjpmBuildArgExtname);
+    if (!Utility.checkIsValid(buildArgs) || typeof buildArgs !== 'object') {
+      return '';
+    }
+    const compatVersion = buildArgs[COMPAT_VERSION_FIELD];
+    return typeof compatVersion === 'string' ? compatVersion.trim() : '';
+  }
+
+  static getSupportedCompatVersions(forceRefresh: boolean = false): string[] | undefined {
+    const cangjieHome = Utility.getCangjieHome();
+    if (!forceRefresh && Utility.supportedCompatVersions !== undefined &&
+      Utility.compatVersionsCangjieHome === cangjieHome) {
+      return Utility.supportedCompatVersions;
+    }
+    Utility.compatVersionsCangjieHome = cangjieHome;
+    try {
+      const helpText = execSync(Utility.getExecCmd('cjc -h'), {encoding: 'utf8', windowsHide: true, timeout: 20000});
+      Utility.supportedCompatVersions = parseCompatVersionsFromCjcHelp(helpText);
+    } catch (e) {
+      Utility.supportedCompatVersions = undefined;
+      OutputHelper.appendLine(`[warning]: failed to obtain the supported compatibility versions: ${e}`, true);
+    }
+    return Utility.supportedCompatVersions;
+  }
+
+  static getCompatVersionForBuild(): {value: string; error: string} {
+    const stored = Utility.getStoredCompatVersion();
+    if (stored === '') {
+      return {value: '', error: ''};
+    }
+    if (!isCompatVersionFormatValid(stored)) {
+      return {value: '', error: `Invalid compatibility target SDK version '${stored}': ` +
+        `the expected format is 'major.minor', e.g. '1.3'.`};
+    }
+    const supported = Utility.getSupportedCompatVersions();
+    if (supported === undefined) {
+      return {value: '', error: 'Failed to obtain the supported compatibility versions of the current toolchain, ' +
+        'please check the Cangjie SDK configuration and try again.'};
+    }
+    if (!supported.includes(stored)) {
+      return {value: '', error: `The compatibility target SDK version '${stored}' is not supported by the current ` +
+        `toolchain (supported versions: ${supported.length === 0 ? 'none' : supported.join(', ')}), ` +
+        'please select another one.'};
+    }
+    return {value: stored, error: ''};
+  }
+
+  /**
+   * Append the configured compatibility target to a cjpm build/run/test command.
+   * Returns an error instead of a command when the stored selection is not supported by the toolchain,
+   * so that an invalid selection can never be used for a build.
+   */
+  static appendCompatVersion(cmd: string): {cmd: string; error: string} {
+    const result = {cmd: cmd, error: ''};
+    if (!Utility.checkIsValid(cmd)) {
+      return result;
+    }
+    const trimmed = cmd.trim();
+    if (!/^cjpm\s+(build|run|test)(\s|$)/.test(trimmed) || /(^|\s)(-h|--help)(\s|$)/.test(trimmed) ||
+      trimmed.indexOf(COMPAT_VERSION_OPTION) !== -1) {
+      return result;
+    }
+    const compatVersion = Utility.getCompatVersionForBuild();
+    if (compatVersion.error !== '') {
+      result.error = compatVersion.error;
+      return result;
+    }
+    if (compatVersion.value !== '') {
+      result.cmd = `${trimmed} ${COMPAT_VERSION_OPTION} ${compatVersion.value}`;
+    }
+    return result;
   }
 
   static getExportPath(): string {

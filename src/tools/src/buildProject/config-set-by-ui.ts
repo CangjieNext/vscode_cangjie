@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (c) Huawei Technologies Co., Ltd. 2026. All rights reserved.
  * This source file is part of the Cangjie project, licensed under Apache-2.0
  * with Runtime Library Exception.
@@ -96,6 +96,7 @@ const elementId: { [key: string]: string } = {
   cross: 'cross',
   job: 'job',
   features: 'features',
+  compatVersion: 'compatVersion',
   increment: 'increment',
   crossbtn: 'crossCompile',
   crossOpts: 'crossOpts',
@@ -248,6 +249,9 @@ class SettingByUi {
         break;
       case 'settedcjpmBuildArgs':
         this.updatedsettedcjpmBuildArgs(config);
+        break;
+      case 'settedCompatVersions':
+        this.updateCompatVersions(config);
         break;
       default:
         break;
@@ -454,6 +458,48 @@ class SettingByUi {
     }
     if (config.features !== '' && this.featuresItems.has(config.features)) {
       featuresElement.value = config.features;
+    }
+    const compatElement = document.getElementById(elementId.compatVersion) as HTMLSelectElement;
+    if (this.checkIsValid(config.compatVersion) && this.checkIsValid(compatElement)) {
+      compatElement.value = config.compatVersion;
+    }
+  }
+
+  // The supported compatibility target versions are queried by the extension from the current toolchain.
+  private updateCompatVersions(config: unknown): void {
+    if (!this.checkIsValid(config)) {
+      return;
+    }
+    const compatElement = document.getElementById(elementId.compatVersion) as HTMLSelectElement;
+    if (!this.checkIsValid(compatElement)) {
+      return;
+    }
+    const configObj = config as {versions?: unknown; supported?: unknown; selected?: unknown};
+    const versions = Array.isArray(configObj.versions) ? configObj.versions as string[] : [];
+    const selected = this.convertStr(configObj.selected);
+    this.updating = true;
+    try {
+      compatElement.innerHTML = '';
+      const defaultOption = document.createElement('option');
+      defaultOption.value = '';
+      defaultOption.textContent = 'default (current SDK)';
+      compatElement.appendChild(defaultOption);
+      versions.forEach((version: string) => {
+        const option = document.createElement('option');
+        option.value = version;
+        option.textContent = version;
+        compatElement.appendChild(option);
+      });
+      if (configObj.supported === false) {
+        compatElement.disabled = true;
+        this.doShowInlayInfo(compatElement, 'Failed to obtain the supported compatibility version list.');
+      } else {
+        compatElement.disabled = false;
+        compatElement.style.color = '';
+        compatElement.value = versions.includes(selected) ? selected : '';
+      }
+    } finally {
+      this.updating = false;
     }
   }
 

@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (c) Huawei Technologies Co., Ltd. 2026. All rights reserved.
  * This source file is part of the Cangjie project, licensed under Apache-2.0
  * with Runtime Library Exception.
@@ -28,6 +28,13 @@ export class CjProjectBuildProvider {
     if (!Utility.checkIsValid(execCmd)) {
       return false;
     }
+    // pass the configured compatibility target to cjpm build/run/test, and block an unsupported selection
+    const compatCmd = Utility.appendCompatVersion(execCmd);
+    if (compatCmd.error !== '') {
+      vscode.window.showErrorMessage(compatCmd.error);
+      return false;
+    }
+    execCmd = compatCmd.cmd;
     const modulePath = Utility.getCjRootProjectPath();
     if (!Utility.checkIsValid(modulePath)) {
       vscode.window.showErrorMessage('Project is not exist');

@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (c) Huawei Technologies Co., Ltd. 2026. All rights reserved.
  * This source file is part of the Cangjie project, licensed under Apache-2.0
  * with Runtime Library Exception.
@@ -80,6 +80,7 @@ interface InitializationData {
   singleConditionCompileOption: unknown;
   conditionCompilePaths: string[];
   targetLib: string;
+  compatVersionOption: string;
 }
 
 export class Utility {
@@ -91,6 +92,7 @@ export class Utility {
     singleConditionCompileOption: {} as unknown,
     conditionCompilePaths: [],
     targetLib: '',
+    compatVersionOption: '',
   };
 
   private static requirePath: string = '';
@@ -545,12 +547,28 @@ export class Utility {
       const features = buildArgsJson[FEATURES];
       this.baseTargetFeatures = features.split(',').map(item => item.trim()).filter(item => item !== '');
     }
+    this.allInitializationOptions.compatVersionOption = Utility.getCompatVersionOption(buildArgsJson);
     await this.setCentralRepoPath();
     await this.getCjpmLockVersion(cjProjectPath);
     await this.getMultiModuleOption(cjProjectPath);
     await this.initTargetLib();
     this.getConditionCompileOption();
     return this.allInitializationOptions;
+  }
+
+  // Read the compatibility target saved by the build configuration UI. Only two-segment versions are accepted;
+  // an absent or invalid value keeps the compiler default behavior.
+  private static getCompatVersionOption(buildArgsJson: unknown): string {
+    if (!Utility.checkIsValid(buildArgsJson) || typeof buildArgsJson !== 'object') {
+      return '';
+    }
+    const buildArgs = buildArgsJson as unknown as Record<string, unknown>;
+    const compatVersion = buildArgs['compatVersion'];
+    if (typeof compatVersion !== 'string') {
+      return '';
+    }
+    const trimmed = compatVersion.trim();
+    return /^\d+\.\d+$/.test(trimmed) ? trimmed : '';
   }
 
   static getCjRootProjectPath(): string {
@@ -936,6 +954,7 @@ export class Utility {
       singleConditionCompileOption: {},
       conditionCompilePaths: [],
       targetLib: '',
+      compatVersionOption: '',
     };
     this.requirePath = '';
   }
